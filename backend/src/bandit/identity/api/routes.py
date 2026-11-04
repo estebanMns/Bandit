@@ -23,7 +23,8 @@ Module = Annotated[IdentityModule, Depends(_module)]
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    # Sin EmailStr: un correo interno como admin@bandit.local también debe poder ingresar.
+    email: str = Field(min_length=1, max_length=320)
     password: str = Field(min_length=1, max_length=256)
 
 
