@@ -1,0 +1,24 @@
+.pagina {
+  display: grid;
+  align-content: center;
+  gap: var(--e-4);
+  width: min(100% - 2 * var(--e-6), 28rem);
+  min-height: 100dvh;
+  margin-inline: auto;
+}
+
+.titulo {
+  font-size: var(--t-2xl);
+  font-stretch: 125%;
+  font-weight: 800;
+}
+
+.bajada {
+  color: var(--texto-tenue);
+}
+
+.formulario {
+  display: grid;
+  gap: var(--e-4);
+  margin-top: var(--e-4);
+}
