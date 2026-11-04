@@ -59,7 +59,9 @@ class SqlIncidentRepository:
 
     async def save(self, incident: Incident) -> None:
         """Compara y actualiza en una sola sentencia: solo una transición simultánea gana."""
-        previous = incident.audit[-2].status
+        previous = incident.previous_status
+        if previous is None:
+            raise ValueError("El incidente no tiene una transición por guardar")
         position = len(incident.audit) - 1
         async with self._sessions.begin() as session:
             result = await session.execute(
