@@ -8,8 +8,8 @@ export const metadata: Metadata = {
   description: "Copia informativa del listado público de la Policía Nacional.",
 };
 
-/** ISR: se regenera tras cada extracción y, como respaldo, cada hora. */
-export const revalidate = 3600;
+/** ISR: se regenera tras cada extracción y, como respaldo, cada minuto. */
+export const revalidate = 60;
 
 const SOURCE = "https://www.policia.gov.co/los-mas-buscados-colombia";
 

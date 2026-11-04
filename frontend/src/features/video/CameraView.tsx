@@ -24,14 +24,14 @@ export function CameraView({ cameraId, name, featured = false, onSelect }: Camer
 
   const content = (
     <>
-      <canvas ref={canvasRef} className={styles.lienzo} aria-label={`Video de ${name}`} />
+      <canvas ref={canvasRef} className={styles.lienzo} role="img" aria-label={`Video de ${name}`} />
       {state !== "en-vivo" && <p className={styles.aviso}>{STATE_LABEL[state]}</p>}
       <div className={styles.pie}>
         <span className={styles.nombre}>{name}</span>
         <span className={styles.estado} data-estado={state}>
           <span aria-hidden="true" className={styles.marca} />
           {STATE_LABEL[state]}
-          {featured && state === "en-vivo" ? ` a ${fps} fps` : ""}
+          {featured && state === "en-vivo" && fps > 0 ? ` a ${fps} fps` : ""}
         </span>
       </div>
     </>

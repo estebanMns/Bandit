@@ -64,6 +64,17 @@
   gap: var(--e-6);
 }
 
+.resumen {
+  display: grid;
+  align-content: start;
+  gap: var(--e-3);
+}
+
+.resumen h2 {
+  margin-top: var(--e-3);
+  font-size: var(--t-lg);
+}
+
 .evidencia {
   display: block;
   width: 100%;

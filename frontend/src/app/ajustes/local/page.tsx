@@ -7,6 +7,7 @@ import { Field } from "@/components/ui/Field";
 import { createEstablishment, setCaiWhatsApp } from "@/features/establishments/api";
 import { useEstablishment } from "@/features/establishments/useEstablishment";
 import { WhatsAppTest } from "@/features/establishments/WhatsAppTest";
+import { PushToggle } from "@/features/push/PushToggle";
 import { ApiError } from "@/lib/api";
 import styles from "../ajustes.module.css";
 
@@ -98,6 +99,7 @@ export default function LocalPage() {
             {current.cai_whatsapp && <WhatsAppTest establishmentId={current.id} />}
           </section>
         )}
+        {current && <PushToggle establishmentId={current.id} />}
       </main>
     </AppShell>
   );

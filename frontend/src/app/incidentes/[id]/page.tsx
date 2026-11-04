@@ -24,7 +24,7 @@ export default async function IncidentPage({ params }: { params: Promise<{ id: s
             src={`/api/incidents/${incident.id}/evidence`}
             alt={`Fotograma de ${incident.camera_name}: ${incident.description}`}
           />
-          <div>
+          <div className={styles.resumen}>
             <p>{incident.description}</p>
             <p className={styles.tenue}>
               {incident.camera_name}, {formatDateTime(incident.detected_at)}

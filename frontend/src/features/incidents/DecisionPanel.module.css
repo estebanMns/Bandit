@@ -50,8 +50,9 @@
   font-weight: 700;
 }
 
+/* Más claro que Baliza: el texto pequeño debe llegar a 4.5:1 sobre el panel. */
 .error {
-  color: var(--baliza);
+  color: #ff9db4;
 }
 
 .acciones {

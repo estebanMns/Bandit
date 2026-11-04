@@ -45,6 +45,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         yield
         await application.cameras.supervisor.stop_all()
         await application.analysis.supervisor.stop_all()
+        await application.background.wait_all()
         scheduler.shutdown(wait=False)
         await application.engine.dispose()
 
