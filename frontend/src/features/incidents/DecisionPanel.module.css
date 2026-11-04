@@ -1,0 +1,94 @@
+.panel {
+  display: flex;
+  grid-area: decision;
+  flex-direction: column;
+  gap: var(--e-3);
+  align-self: start;
+  padding: var(--e-4);
+  border-left: 4px solid var(--borde);
+  background: var(--superficie);
+}
+
+.calma {
+  font-size: var(--t-xl);
+  font-stretch: 112%;
+}
+
+.tenue {
+  color: var(--texto-tenue);
+}
+
+.tenue a {
+  color: var(--sodio);
+}
+
+.encabezado {
+  display: grid;
+  gap: var(--e-1);
+}
+
+.encabezado h2 {
+  color: var(--texto);
+  font-size: var(--t-xl);
+  font-stretch: 125%;
+  font-weight: 800;
+}
+
+.encabezado[data-estado="detected"] h2 {
+  color: var(--baliza);
+}
+
+.evidencia {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #060b1b;
+}
+
+.estado {
+  font-weight: 700;
+}
+
+.error {
+  color: var(--baliza);
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2);
+}
+
+.linea {
+  display: block;
+  padding: var(--e-3);
+  border: 2px solid var(--sodio);
+  border-radius: var(--radio-control);
+  color: var(--sodio);
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-lg);
+  font-stretch: 112%;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+}
+
+.velo {
+  position: fixed;
+  inset: 0;
+  background: rgb(6 11 27 / 0.72);
+}
+
+.dialogo {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  gap: var(--e-4);
+  width: min(100% - 2 * var(--e-4), 30rem);
+  padding: var(--e-6);
+  border-top: 4px solid var(--baliza);
+  background: var(--asfalto);
+  transform: translate(-50%, -50%);
+}
