@@ -1,0 +1,11 @@
+{
+  "name": "Bandit",
+  "short_name": "Bandit",
+  "description": "Cámaras que avisan a tiempo. Tú decides a quién llamar.",
+  "lang": "es-CO",
+  "start_url": "/monitor",
+  "display": "standalone",
+  "background_color": "#101d42",
+  "theme_color": "#101d42",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
