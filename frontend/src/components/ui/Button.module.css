@@ -1,0 +1,41 @@
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-2);
+  min-height: 44px;
+  padding: var(--e-2) var(--e-6);
+  border: 2px solid transparent;
+  border-radius: var(--radio-control);
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-md);
+  font-weight: 700;
+  font-stretch: 112%;
+  cursor: pointer;
+  transition: transform 120ms var(--curva);
+}
+
+.boton:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.boton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.principal {
+  background: var(--accion);
+  color: var(--sobre-accion);
+}
+
+.secundario {
+  border-color: var(--borde);
+  background: transparent;
+  color: var(--texto);
+}
+
+.peligro {
+  background: var(--baliza);
+  color: var(--noche);
+}
