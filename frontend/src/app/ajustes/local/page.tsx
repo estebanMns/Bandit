@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { createEstablishment, setCaiWhatsApp } from "@/features/establishments/api";
 import { useEstablishment } from "@/features/establishments/useEstablishment";
+import { WhatsAppTest } from "@/features/establishments/WhatsAppTest";
 import { ApiError } from "@/lib/api";
 import styles from "../ajustes.module.css";
 
@@ -94,6 +95,7 @@ export default function LocalPage() {
                 </p>
               )}
             </form>
+            {current.cai_whatsapp && <WhatsAppTest establishmentId={current.id} />}
           </section>
         )}
       </main>
