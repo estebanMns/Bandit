@@ -1,0 +1,92 @@
+.pagina {
+  display: grid;
+  gap: var(--e-6);
+  width: min(100% - 2 * var(--e-6), 60rem);
+  margin: var(--e-8) auto var(--e-12);
+}
+
+.titulo {
+  font-size: var(--t-2xl);
+  font-stretch: 125%;
+  font-weight: 800;
+}
+
+.tenue {
+  color: var(--texto-tenue);
+}
+
+.lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1.5fr auto;
+  gap: var(--e-1) var(--e-4);
+  align-items: baseline;
+  padding: var(--e-3) 0;
+  border-bottom: 1px solid var(--borde);
+  text-decoration: none;
+}
+
+.fila:hover .situacion {
+  color: var(--sodio);
+}
+
+.situacion {
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-lg);
+  font-stretch: 112%;
+  font-weight: 700;
+}
+
+.estado {
+  font-weight: 700;
+}
+
+.estado[data-estado="detected"] {
+  color: var(--baliza);
+}
+
+.estado[data-estado="notified"] {
+  color: var(--agua);
+}
+
+.estado[data-estado="notification_failed"] {
+  color: var(--sodio);
+}
+
+.detalle {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--e-6);
+}
+
+.evidencia {
+  display: block;
+  width: 100%;
+  background: #060b1b;
+}
+
+.bitacora {
+  display: grid;
+  gap: var(--e-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bitacora li {
+  display: grid;
+  padding-left: var(--e-3);
+  border-left: 3px solid var(--borde);
+}
+
+@media (max-width: 44rem) {
+  .fila,
+  .detalle {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
