@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 /**
@@ -10,6 +11,7 @@ const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? "";
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? "";
 const RTSP_URL = process.env.E2E_RTSP_URL ?? "";
 const SHOTS = process.env.E2E_SHOTS;
+const DIRECTORY_SAMPLE = process.env.E2E_DIRECTORY_SAMPLE;
 const MOBILE = { width: 390, height: 844 };
 
 async function shot(page: Page, name: string, fullPage = true) {
@@ -38,6 +40,29 @@ function distinctPixels(page: Page): Promise<number> {
     return seen.size;
   });
 }
+
+async function expectAccessible(page: Page, label: string) {
+  const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+  const summary = violations.map(
+    (item) => `${label}: ${item.id} (${item.nodes.length}) ${item.nodes[0]?.target}`,
+  );
+  expect(summary).toEqual([]);
+}
+
+test("las pantallas cumplen WCAG 2 AA", async ({ page }) => {
+  for (const path of ["/", "/guia", "/privacidad", "/ingresar", "/directorio"]) {
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+    await expectAccessible(page, path);
+  }
+  await login(page);
+  for (const path of ["/monitor", "/incidentes", "/ajustes/camaras", "/ajustes/local"]) {
+    await page.goto(path);
+    // El video mantiene la red ocupada: se espera a que la pantalla cargue sus datos.
+    await page.waitForTimeout(1_500);
+    await expectAccessible(page, path);
+  }
+});
 
 test("portada y páginas públicas", async ({ page }) => {
   await page.goto("/");
@@ -123,6 +148,20 @@ test("directorio y copia sin conexión", async ({ page, context }) => {
   await page.goto("/directorio");
   await expect(page.getByRole("heading", { name: "Los más buscados" })).toBeVisible();
   await expect(page.getByText("se presume inocente")).toBeVisible();
+  if (DIRECTORY_SAMPLE) {
+    await expect(async () => {
+      await page.reload();
+      await expect(page.getByText(DIRECTORY_SAMPLE)).toBeVisible({ timeout: 1_000 });
+    }).toPass({ timeout: 90_000 });
+    await page.getByRole("searchbox").fill("sin coincidencias");
+    await expect(page.getByText("Ningún registro coincide")).toBeVisible();
+    await page.getByRole("searchbox").fill("");
+    await page.getByText(DIRECTORY_SAMPLE).click();
+    await expect(page.getByRole("heading", { name: DIRECTORY_SAMPLE })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Llama al 123" })).toBeVisible();
+    await shot(page, "directorio-ficha");
+    await page.goto("/directorio");
+  }
   await shot(page, "directorio-escritorio");
   await page.setViewportSize(MOBILE);
   await shot(page, "directorio-movil");
