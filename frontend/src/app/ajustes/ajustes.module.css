@@ -1,0 +1,64 @@
+.pagina {
+  display: grid;
+  gap: var(--e-8);
+  width: min(100% - 2 * var(--e-6), 44rem);
+  margin: var(--e-8) auto var(--e-12);
+}
+
+.titulo {
+  font-size: var(--t-2xl);
+  font-stretch: 125%;
+  font-weight: 800;
+}
+
+.seccion {
+  display: grid;
+  gap: var(--e-4);
+}
+
+.seccion h2 {
+  font-size: var(--t-lg);
+}
+
+.formulario {
+  display: grid;
+  gap: var(--e-4);
+  justify-items: start;
+}
+
+.formulario > div {
+  width: 100%;
+}
+
+.lista {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-3);
+  padding: var(--e-3) 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.fila strong {
+  flex: 1;
+  min-width: 10rem;
+}
+
+.ayuda {
+  color: var(--texto-tenue);
+}
+
+.confirmacion {
+  color: var(--agua);
+}
+
+.error {
+  color: var(--baliza);
+}
