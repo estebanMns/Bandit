@@ -67,6 +67,31 @@ def test_protected_routes_require_a_session(client: TestClient) -> None:
     assert client.get("/api/establishments").status_code == 401
 
 
+def test_login_accepts_internal_domains(tmp_path: Path) -> None:
+    url = f"sqlite+aiosqlite:///{tmp_path / 'interno.db'}"
+    app = create_app(
+        Settings(
+            _env_file=None,
+            database_url=url,
+            camera_encryption_key=Fernet.generate_key().decode(),
+            bootstrap_admin_email="admin@bandit.local",
+            bootstrap_admin_password=PASSWORD,
+            media_root=str(tmp_path),
+        )
+    )
+    asyncio.run(_create_schema(url))
+
+    with TestClient(app) as client:
+        assert login(client, "admin@bandit.local")
+
+
+def test_wrong_credentials_get_a_readable_error(client: TestClient) -> None:
+    response = client.post("/api/auth/login", json={"email": "no-es-correo", "password": "x"})
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Correo o clave incorrectos"
+
+
 def test_session_cookie_is_http_only(client: TestClient) -> None:
     response = client.post("/api/auth/login", json={"email": ADMIN, "password": PASSWORD})
 
