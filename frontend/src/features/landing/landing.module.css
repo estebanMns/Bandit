@@ -1,0 +1,175 @@
+.portada {
+  min-height: 100dvh;
+  overflow-x: clip;
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-4);
+  padding: var(--e-4) clamp(var(--e-4), 5vw, var(--e-12));
+}
+
+.marca {
+  color: var(--sodio);
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-xl);
+  font-stretch: 125%;
+  font-weight: 900;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--e-6);
+}
+
+.nav a {
+  text-underline-offset: 0.25em;
+}
+
+.ingresar {
+  padding: var(--e-2) var(--e-6);
+  border-radius: var(--radio-control);
+  background: var(--sodio);
+  color: var(--noche);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.heroe {
+  display: grid;
+  gap: var(--e-6);
+  padding: var(--e-12) clamp(var(--e-4), 5vw, var(--e-12)) var(--e-8);
+}
+
+/* El tipo va de ancho a condensado, como una farola que se aleja en la calle. */
+.titular {
+  font-size: clamp(3rem, 11.5vw, 10.5rem);
+  font-stretch: 125%;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.92;
+  text-wrap: pretty;
+}
+
+.bajada {
+  max-width: 44ch;
+  color: var(--texto-tenue);
+  font-size: var(--t-lg);
+}
+
+.demo {
+  margin: var(--e-6) calc(-1 * clamp(var(--e-4), 5vw, var(--e-12))) 0;
+  padding: 0 clamp(var(--e-1), 3vw, var(--e-8));
+}
+
+.demo figcaption {
+  padding-inline: var(--e-3);
+  color: var(--texto-tenue);
+  font-size: var(--t-sm);
+}
+
+.pasos {
+  display: grid;
+  gap: var(--e-6);
+  padding: var(--e-12) clamp(var(--e-4), 5vw, var(--e-12));
+  background: var(--asfalto);
+}
+
+.pasos h2,
+.limites h2 {
+  font-size: var(--t-2xl);
+  font-stretch: 112%;
+}
+
+.pasos ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e-8);
+  margin: 0;
+  padding: 0;
+  counter-reset: paso;
+  list-style: none;
+}
+
+.pasos li {
+  display: grid;
+  align-content: start;
+  gap: var(--e-2);
+  counter-increment: paso;
+}
+
+.pasos li::before {
+  color: var(--sodio);
+  content: counter(paso);
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-2xl);
+  font-stretch: 75%;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.pasos h3 {
+  font-size: var(--t-lg);
+}
+
+.limites {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--e-8);
+  padding: var(--e-12) clamp(var(--e-4), 5vw, var(--e-12));
+}
+
+.limites ul {
+  display: grid;
+  gap: var(--e-3);
+  margin: 0;
+  padding: 0;
+  font-size: var(--t-lg);
+  list-style: none;
+}
+
+.pie {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--e-3);
+  padding: var(--e-6) clamp(var(--e-4), 5vw, var(--e-12));
+  border-top: 1px solid var(--borde);
+  color: var(--texto-tenue);
+}
+
+.documento {
+  display: grid;
+  gap: var(--e-4);
+  width: min(100% - 2 * var(--e-6), 42rem);
+  margin: var(--e-8) auto var(--e-12);
+}
+
+.documento h1 {
+  font-size: var(--t-2xl);
+  font-stretch: 125%;
+  font-weight: 800;
+}
+
+.documento h2 {
+  margin-top: var(--e-4);
+  font-size: var(--t-lg);
+}
+
+.documento ol,
+.documento ul {
+  display: grid;
+  gap: var(--e-2);
+  margin: 0;
+  padding-left: var(--e-6);
+}
+
+@media (max-width: 44rem) {
+  .pasos ol,
+  .limites {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
