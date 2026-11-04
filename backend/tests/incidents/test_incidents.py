@@ -13,6 +13,7 @@ from bandit.incidents.domain.models import (
     IncidentStatus,
 )
 from bandit.incidents.infrastructure.file_evidence import FileEvidenceStore
+from bandit.incidents.infrastructure.repositories import SqlIncidentRepository
 from bandit.incidents.module import IncidentsModule
 from bandit.shared.errors import ConflictError
 from bandit.shared.events import InMemoryEventBus
@@ -129,6 +130,20 @@ async def test_simultaneous_confirmations_authorize_only_once(module, local, clo
 
     assert sum(isinstance(result, Incident) for result in results) == 1
     assert len(confirmed) == 1
+
+
+async def test_stale_read_cannot_win_after_another_confirmation(module, local, clock, sessions):
+    """Una lectura vieja puede traer el estado antiguo con la auditoría ya actualizada."""
+    incident = await module.record_situation.execute(situation(local.id, clock))
+    stale = await module.get.execute(incident.id)
+    await module.confirm.execute(incident.id, OPERATOR)
+    fresh = await module.get.execute(incident.id)
+    stale.audit = list(fresh.audit)
+
+    stale.confirm(clock.now(), "otro@example.com")
+
+    with pytest.raises(ConflictError):
+        await SqlIncidentRepository(sessions).save(stale)
 
 
 async def test_audit_records_who_did_what(module, local, clock):
