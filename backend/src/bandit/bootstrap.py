@@ -18,6 +18,16 @@ from bandit.cameras.infrastructure import tables as camera_tables  # noqa: F401
 from bandit.cameras.infrastructure.fernet_cipher import FernetUrlCipher
 from bandit.cameras.infrastructure.ffmpeg_source import FfmpegFrameSource
 from bandit.cameras.module import CamerasModule
+from bandit.directory.domain.ports import DirectoryAgent
+from bandit.directory.infrastructure import tables as directory_tables  # noqa: F401
+from bandit.directory.infrastructure.file_media import FileMediaStore
+from bandit.directory.infrastructure.gemini_agent import (
+    DisabledDirectoryAgent,
+    GeminiDirectoryAgent,
+)
+from bandit.directory.infrastructure.next_revalidator import NextRevalidator
+from bandit.directory.infrastructure.polite_fetcher import PoliteFetcher
+from bandit.directory.module import DirectoryModule
 from bandit.establishments.infrastructure import tables as establishment_tables  # noqa: F401
 from bandit.establishments.module import EstablishmentsModule
 from bandit.identity.infrastructure import tables as identity_tables  # noqa: F401
@@ -48,6 +58,7 @@ class Application:
     analysis: AnalysisModule
     incidents: IncidentsModule
     notifications: NotificationsModule
+    directory: DirectoryModule
     event_hub: EventHub
 
 
@@ -57,6 +68,12 @@ def _scene_analyzer(settings: Settings) -> SceneAnalyzer:
     return GeminiSceneAnalyzer(
         settings.gemini_api_key, settings.gemini_model, settings.gemini_media_resolution
     )
+
+
+def _directory_agent(settings: Settings) -> DirectoryAgent:
+    if not settings.gemini_api_key:
+        return DisabledDirectoryAgent()
+    return GeminiDirectoryAgent(settings.gemini_api_key, settings.gemini_model)
 
 
 def _wire_events(bus: EventBus, app: Application) -> None:
@@ -125,6 +142,14 @@ def build_application(settings: Settings) -> Application:
         bus,
         clock,
     )
+    directory = DirectoryModule(
+        sessions,
+        _directory_agent(settings),
+        PoliteFetcher(),
+        FileMediaStore(str(Path(settings.media_root) / "directory")),
+        NextRevalidator(settings.frontend_internal_url, settings.revalidate_secret),
+        clock,
+    )
     application = Application(
         engine=engine,
         identity=identity,
@@ -133,6 +158,7 @@ def build_application(settings: Settings) -> Application:
         analysis=analysis,
         incidents=incidents,
         notifications=notifications,
+        directory=directory,
         event_hub=EventHub(),
     )
     _wire_events(bus, application)
