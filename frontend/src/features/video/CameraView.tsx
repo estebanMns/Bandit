@@ -31,7 +31,7 @@ export function CameraView({ cameraId, name, featured = false, onSelect }: Camer
         <span className={styles.estado} data-estado={state}>
           <span aria-hidden="true" className={styles.marca} />
           {STATE_LABEL[state]}
-          {featured && state === "en-vivo" ? ` a ${fps} fps` : ""}
+          {featured && state === "en-vivo" && fps > 0 ? ` a ${fps} fps` : ""}
         </span>
       </div>
     </>
