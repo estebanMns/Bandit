@@ -49,6 +49,8 @@ class Incident:
     detected_at: datetime
     status: IncidentStatus = IncidentStatus.DETECTED
     audit: list[AuditEntry] = field(default_factory=list)
+    previous_status: IncidentStatus | None = None
+    """Estado desde el que partió la última transición en memoria; protege el guardado."""
 
     def __post_init__(self) -> None:
         if not self.audit:
@@ -57,6 +59,7 @@ class Incident:
     def _transition(self, target: IncidentStatus, at: datetime, actor: str) -> None:
         if target not in _ALLOWED_TRANSITIONS[self.status]:
             raise ConflictError(f"El incidente ya está en estado {self.status.value}")
+        self.previous_status = self.status
         self.status = target
         self.audit.append(AuditEntry(target, at, actor))
 
