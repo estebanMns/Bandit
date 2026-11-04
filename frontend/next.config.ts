@@ -8,7 +8,10 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
 ];
 
-/** SharedArrayBuffer requiere aislamiento cross-origin en la página del monitor. */
+/**
+ * SharedArrayBuffer exige aislamiento cross-origin. Va en todo el sitio porque la
+ * navegación del lado del cliente hacia /monitor no vuelve a pedir cabeceras.
+ */
 const crossOriginIsolation = [
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
   { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
@@ -20,9 +23,7 @@ const config: NextConfig = {
   images: { unoptimized: true },
   async headers() {
     return [
-      { source: "/:path*", headers: securityHeaders },
-      { source: "/monitor", headers: crossOriginIsolation },
-      { source: "/monitor/:path*", headers: crossOriginIsolation },
+      { source: "/:path*", headers: [...securityHeaders, ...crossOriginIsolation] },
       {
         source: "/sw.js",
         headers: [{ key: "Cache-Control", value: "no-cache" }],
