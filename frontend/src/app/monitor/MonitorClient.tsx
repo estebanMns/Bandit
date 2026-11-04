@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { listCameras, type Camera } from "@/features/cameras/api";
 import { useEstablishment } from "@/features/establishments/useEstablishment";
+import { chooseDecision } from "@/features/incidents/decision";
 import { DecisionPanel } from "@/features/incidents/DecisionPanel";
 import { ShiftLine } from "@/features/incidents/ShiftLine";
 import { useIncidents } from "@/features/incidents/useIncidents";
@@ -31,9 +32,7 @@ export function MonitorClient() {
 
   const featured = cameras.find((camera) => camera.id === selectedCameraId) ?? cameras[0];
   const others = cameras.filter((camera) => camera.id !== featured?.id);
-  const pending = incidents.find((incident) => incident.status === "detected");
-  const decision =
-    incidents.find((incident) => incident.id === selectedIncidentId) ?? pending ?? null;
+  const decision = chooseDecision(incidents, selectedIncidentId);
 
   return (
     <AppShell
@@ -72,7 +71,10 @@ export function MonitorClient() {
           <DecisionPanel
             incident={decision}
             caiNumber={current?.cai_whatsapp ?? null}
-            onChange={apply}
+            onChange={(incident) => {
+              apply(incident);
+              setSelectedIncidentId(incident.id);
+            }}
           />
         )}
         {featured && (
