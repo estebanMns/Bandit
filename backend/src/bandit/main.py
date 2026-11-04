@@ -3,40 +3,63 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 
-from bandit.bootstrap import build_application
+from bandit.bootstrap import Application, build_application
 from bandit.cameras.api.routes import router as cameras_router
 from bandit.cameras.api.routes import video_router
 from bandit.establishments.api.routes import router as establishments_router
 from bandit.identity.api.routes import router as identity_router
+from bandit.incidents.api.routes import router as incidents_router
+from bandit.notifications.api.routes import router as notifications_router
+from bandit.realtime.api.routes import router as realtime_router
 from bandit.shared.config import Settings, get_settings
 from bandit.shared.http import install_error_handlers
+
+
+def _build_scheduler(application: Application) -> AsyncIOScheduler:
+    scheduler = AsyncIOScheduler(timezone="UTC")
+    scheduler.add_job(application.incidents.purge_evidence.execute, "interval", hours=6)
+    return scheduler
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     resolved = settings or get_settings()
     application = build_application(resolved)
+    scheduler = _build_scheduler(application)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         await application.identity.bootstrap_admin.execute(
             resolved.bootstrap_admin_email, resolved.bootstrap_admin_password
         )
+        scheduler.start()
         await application.cameras.supervisor.start_all()
         yield
         await application.cameras.supervisor.stop_all()
+        await application.analysis.supervisor.stop_all()
+        scheduler.shutdown(wait=False)
         await application.engine.dispose()
 
     app = FastAPI(title="Bandit", lifespan=lifespan)
     app.state.identity = application.identity
     app.state.establishments = application.establishments
     app.state.cameras = application.cameras
+    app.state.incidents = application.incidents
+    app.state.notifications = application.notifications
+    app.state.event_hub = application.event_hub
     install_error_handlers(app)
-    app.include_router(identity_router)
-    app.include_router(establishments_router)
-    app.include_router(cameras_router)
-    app.include_router(video_router)
+    for router in (
+        identity_router,
+        establishments_router,
+        cameras_router,
+        video_router,
+        incidents_router,
+        notifications_router,
+        realtime_router,
+    ):
+        app.include_router(router)
 
     @app.get("/api/health", tags=["health"])
     async def health() -> dict[str, str]:

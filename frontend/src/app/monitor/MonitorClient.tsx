@@ -5,13 +5,18 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { listCameras, type Camera } from "@/features/cameras/api";
 import { useEstablishment } from "@/features/establishments/useEstablishment";
+import { DecisionPanel } from "@/features/incidents/DecisionPanel";
+import { ShiftLine } from "@/features/incidents/ShiftLine";
+import { useIncidents } from "@/features/incidents/useIncidents";
 import { CameraView } from "@/features/video/CameraView";
 import styles from "./monitor.module.css";
 
 export function MonitorClient() {
   const { current, loading } = useEstablishment();
   const [cameras, setCameras] = useState<Camera[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
+  const { incidents, connection, apply } = useIncidents(current?.id);
 
   useEffect(() => {
     if (!current) return;
@@ -24,11 +29,20 @@ export function MonitorClient() {
     };
   }, [current]);
 
-  const featured = cameras.find((camera) => camera.id === selectedId) ?? cameras[0];
+  const featured = cameras.find((camera) => camera.id === selectedCameraId) ?? cameras[0];
   const others = cameras.filter((camera) => camera.id !== featured?.id);
+  const pending = incidents.find((incident) => incident.status === "detected");
+  const decision =
+    incidents.find((incident) => incident.id === selectedIncidentId) ?? pending ?? null;
 
   return (
-    <AppShell>
+    <AppShell
+      aside={
+        <span className={styles.conexion} data-conectado={connection.connected}>
+          {connection.connected ? "Alertas activas" : "Reconectando alertas"}
+        </span>
+      }
+    >
       <main className={styles.monitor}>
         {!loading && !featured && (
           <div className={styles.vacio}>
@@ -49,10 +63,24 @@ export function MonitorClient() {
                 key={camera.id}
                 cameraId={camera.id}
                 name={camera.name}
-                onSelect={() => setSelectedId(camera.id)}
+                onSelect={() => setSelectedCameraId(camera.id)}
               />
             ))}
           </section>
+        )}
+        {featured && (
+          <DecisionPanel
+            incident={decision}
+            caiNumber={current?.cai_whatsapp ?? null}
+            onChange={apply}
+          />
+        )}
+        {featured && (
+          <ShiftLine
+            incidents={incidents}
+            selectedId={decision?.id}
+            onSelect={setSelectedIncidentId}
+          />
         )}
       </main>
     </AppShell>

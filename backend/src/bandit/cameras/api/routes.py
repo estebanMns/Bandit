@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Request, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel, Field
 
-from bandit.cameras.domain.models import Camera, CameraStatus
+from bandit.cameras.domain.models import Camera, CameraStatus, Frame
 from bandit.cameras.module import CamerasModule
 from bandit.identity.public import (
     AdminUser,
@@ -17,6 +17,7 @@ from bandit.identity.public import (
     require_csrf,
 )
 from bandit.shared.errors import DomainError, PermissionDeniedError
+from bandit.shared.ws import pump
 
 router = APIRouter(prefix="/api", tags=["cameras"])
 video_router = APIRouter()
@@ -112,9 +113,12 @@ async def video(websocket: WebSocket, camera_id: UUID) -> None:
 
     await websocket.accept()
     subscription = module.frames.subscribe(camera_id)
+
+    async def send(frame: Frame) -> None:
+        await websocket.send_bytes(frame.jpeg)
+
     try:
-        async for frame in subscription:
-            await websocket.send_bytes(frame.jpeg)
+        await pump(websocket, subscription, send)
     finally:
         module.frames.unsubscribe(camera_id, subscription)
         with contextlib.suppress(WebSocketDisconnect, RuntimeError):

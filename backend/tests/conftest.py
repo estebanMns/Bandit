@@ -3,10 +3,11 @@
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import NullPool
 
 from bandit.shared.db import Base, SessionFactory, create_session_factory
 
@@ -28,11 +29,14 @@ def clock() -> FakeClock:
 
 
 @pytest.fixture
-async def engine() -> AsyncIterator[AsyncEngine]:
+async def engine(tmp_path: Path) -> AsyncIterator[AsyncEngine]:
     import bandit.bootstrap  # noqa: F401  Registra todas las tablas.
 
+    # Archivo y conexiones separadas: las transacciones concurrentes son reales.
     engine = create_async_engine(
-        "sqlite+aiosqlite://", poolclass=StaticPool, connect_args={"check_same_thread": False}
+        f"sqlite+aiosqlite:///{tmp_path / 'test.db'}",
+        poolclass=NullPool,
+        connect_args={"timeout": 5},
     )
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)

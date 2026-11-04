@@ -17,7 +17,7 @@ _STATUS_BY_ERROR: dict[type[Exception], int] = {
     PermissionDeniedError: status.HTTP_403_FORBIDDEN,
     NotFoundError: status.HTTP_404_NOT_FOUND,
     ConflictError: status.HTTP_409_CONFLICT,
-    InvalidDataError: status.HTTP_422_UNPROCESSABLE_ENTITY,
+    InvalidDataError: status.HTTP_422_UNPROCESSABLE_CONTENT,
 }
 
 
