@@ -41,6 +41,9 @@ class RecordSituation:
         self._evidence = evidence
         self._bus = bus
 
+    async def execute_event(self, event: SituationDetected) -> None:
+        await self.execute(event)
+
     async def execute(self, event: SituationDetected) -> Incident:
         assessment = event.assessment
         incident = Incident(
