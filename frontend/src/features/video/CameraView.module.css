@@ -1,0 +1,76 @@
+.vista {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radio-panel);
+  background: #060b1b;
+  color: var(--hielo);
+  font: inherit;
+  text-align: left;
+  aspect-ratio: 16 / 9;
+}
+
+button.vista {
+  cursor: pointer;
+}
+
+.lienzo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.aviso {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  max-width: none;
+  color: var(--hielo-tenue);
+}
+
+.pie {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--e-1) var(--e-3);
+  padding: var(--e-6) var(--e-3) var(--e-2);
+  background: linear-gradient(transparent, rgb(6 11 27 / 0.88));
+  font-size: var(--t-sm);
+}
+
+.nombre {
+  font-family: var(--fuente-titulo);
+  font-stretch: 112%;
+  font-weight: 700;
+}
+
+.estado {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  font-stretch: 85%;
+}
+
+.marca {
+  width: 0.6em;
+  height: 0.6em;
+  background: var(--hielo-tenue);
+}
+
+.estado[data-estado="en-vivo"] .marca {
+  border-radius: 50%;
+  background: var(--agua);
+}
+
+.estado[data-estado="sin-senal"] .marca {
+  background: var(--sodio);
+  transform: rotate(45deg);
+}

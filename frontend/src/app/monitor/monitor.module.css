@@ -1,0 +1,56 @@
+.monitor {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "principal decision"
+    "tira decision"
+    "turno turno";
+  gap: var(--e-3);
+  padding: var(--e-3) var(--e-6) var(--e-6);
+}
+
+.principal {
+  grid-area: principal;
+}
+
+.tira {
+  display: grid;
+  grid-area: tira;
+  grid-auto-columns: minmax(11rem, 14rem);
+  grid-auto-flow: column;
+  gap: var(--e-3);
+  overflow-x: auto;
+}
+
+.vacio {
+  display: grid;
+  grid-column: 1 / -1;
+  align-content: center;
+  justify-items: start;
+  gap: var(--e-3);
+  min-height: 60dvh;
+}
+
+.vacio h1 {
+  font-size: var(--t-2xl);
+  font-stretch: 125%;
+}
+
+.vacio a {
+  color: var(--sodio);
+  font-weight: 700;
+}
+
+@media (max-width: 56rem) {
+  .monitor {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "principal"
+      "decision"
+      "tira"
+      "turno";
+    padding-inline: var(--e-3);
+  }
+}
