@@ -1,0 +1,100 @@
+.turno {
+  grid-area: turno;
+  padding: var(--e-4) var(--e-3) var(--e-2);
+}
+
+.pista {
+  position: relative;
+  height: 2.5rem;
+  border-radius: var(--radio-control);
+  background: var(--asfalto);
+}
+
+/* La luz de sodio avanza con la noche. */
+.transcurrido {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radio-control) 0 0 var(--radio-control);
+  background: linear-gradient(90deg, transparent, rgb(255 176 0 / 0.32));
+}
+
+.ahora {
+  position: absolute;
+  top: -0.35rem;
+  bottom: -0.35rem;
+  width: 3px;
+  background: var(--sodio);
+  transform: translateX(-50%);
+}
+
+.marca {
+  position: absolute;
+  top: 50%;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 2px solid var(--noche);
+  background: var(--agua);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+}
+
+/* La forma también comunica el estado, no solo el color. */
+.marca[data-estado="detected"] {
+  width: 1.45rem;
+  height: 1.45rem;
+  background: var(--baliza);
+  transform: translate(-50%, -50%) rotate(45deg);
+  animation: entrada 480ms var(--curva);
+}
+
+.marca[data-estado="discarded"] {
+  border-radius: 50%;
+  background: var(--hielo-tenue);
+}
+
+.marca[data-estado="confirmed"],
+.marca[data-estado="notified"] {
+  border-radius: 50%;
+}
+
+.marca[data-estado="notification_failed"] {
+  background: var(--sodio);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.marca[data-seleccionada] {
+  outline: 3px solid var(--hielo);
+  outline-offset: 2px;
+}
+
+.horas {
+  position: relative;
+  height: 1.5rem;
+  margin: var(--e-1) 0 0;
+  padding: 0;
+  color: var(--texto-tenue);
+  font-size: var(--t-sm);
+  font-stretch: 85%;
+  list-style: none;
+}
+
+.horas li {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.horas li:first-child {
+  transform: none;
+}
+
+.horas li:last-child {
+  transform: translateX(-100%);
+}
+
+@keyframes entrada {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(45deg) scale(2.4);
+  }
+}
