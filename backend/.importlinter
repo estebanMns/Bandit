@@ -1,0 +1,43 @@
+[importlinter]
+root_package = bandit
+
+# El análisis de video y el directorio nunca se conocen entre sí.
+[importlinter:contract:video-directorio-aislados]
+name = Analisis y directorio estan aislados
+type = forbidden
+source_modules =
+    bandit.analysis
+    bandit.cameras
+    bandit.incidents
+forbidden_modules =
+    bandit.directory
+
+[importlinter:contract:directorio-sin-video]
+name = El directorio no conoce el video
+type = forbidden
+source_modules =
+    bandit.directory
+forbidden_modules =
+    bandit.analysis
+    bandit.cameras
+    bandit.incidents
+
+# Dentro de cada módulo, el dominio no depende de capas externas.
+[importlinter:contract:capas]
+name = Las capas internas no dependen de las externas
+type = layers
+containers =
+    bandit.identity
+    bandit.establishments
+    bandit.cameras
+    bandit.analysis
+    bandit.incidents
+    bandit.directory
+    bandit.notifications
+    bandit.realtime
+layers =
+    (api)
+    (infrastructure)
+    application
+    domain
+exhaustive = false
