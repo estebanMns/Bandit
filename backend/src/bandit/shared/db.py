@@ -27,7 +27,7 @@ class UtcDateTime(TypeDecorator[datetime]):
     cache_ok = True
 
     def process_result_value(self, value: Any, dialect: Dialect) -> datetime | None:
-        if value is None:
+        if not isinstance(value, datetime):
             return None
         return value.replace(tzinfo=UTC) if value.tzinfo is None else value
 
