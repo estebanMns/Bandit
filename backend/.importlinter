@@ -38,6 +38,6 @@ containers =
 layers =
     (api)
     (infrastructure)
-    application
-    domain
+    (application)
+    (domain)
 exhaustive = false
