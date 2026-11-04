@@ -43,6 +43,7 @@ from bandit.notifications.infrastructure.whatsapp_cloud import WhatsAppCloudSend
 from bandit.notifications.module import NotificationsModule
 from bandit.realtime.application.event_hub import EventHub
 from bandit.realtime.application.translators import LiveEventPublisher
+from bandit.shared.background import BackgroundTasks
 from bandit.shared.clock import SystemClock
 from bandit.shared.config import Settings
 from bandit.shared.db import create_engine, create_session_factory
@@ -60,6 +61,7 @@ class Application:
     notifications: NotificationsModule
     directory: DirectoryModule
     event_hub: EventHub
+    background: BackgroundTasks
 
 
 def _scene_analyzer(settings: Settings) -> SceneAnalyzer:
@@ -80,6 +82,10 @@ def _wire_events(bus: EventBus, app: Application) -> None:
     """Los módulos no se conocen entre sí: aquí se conectan sus eventos."""
     live = LiveEventPublisher(app.event_hub)
 
+    async def on_confirmed(event: IncidentConfirmed) -> None:
+        # Los reintentos pueden tardar: el operador no debe quedar esperando.
+        app.background.spawn(app.notifications.deliver_alert.execute(event))
+
     async def on_delivered(event: AlertDelivered) -> None:
         await app.incidents.record_delivery.delivered(event.incident_id)
 
@@ -92,7 +98,7 @@ def _wire_events(bus: EventBus, app: Application) -> None:
     bus.subscribe(IncidentChanged, live.on_incident_changed)
     bus.subscribe(IncidentChanged, app.notifications.push_new_incident.execute)
     # Única conexión hacia WhatsApp: exige un incidente confirmado por un operador.
-    bus.subscribe(IncidentConfirmed, app.notifications.deliver_alert.execute)
+    bus.subscribe(IncidentConfirmed, on_confirmed)
     bus.subscribe(AlertDelivered, on_delivered)
     bus.subscribe(AlertFailed, on_failed)
 
@@ -160,6 +166,7 @@ def build_application(settings: Settings) -> Application:
         notifications=notifications,
         directory=directory,
         event_hub=EventHub(),
+        background=BackgroundTasks(),
     )
     _wire_events(bus, application)
     return application
