@@ -9,7 +9,7 @@ interface PageProps {
 }
 
 /** ISR bajo demanda: cada ficha se genera en su primer pedido. */
-export const revalidate = 3600;
+export const revalidate = 60;
 export const dynamicParams = true;
 
 export function generateStaticParams() {
