@@ -24,6 +24,15 @@
   overflow-x: auto;
 }
 
+.conexion {
+  color: var(--texto-tenue);
+  font-size: var(--t-sm);
+}
+
+.conexion[data-conectado="true"] {
+  color: var(--agua);
+}
+
 .vacio {
   display: grid;
   grid-column: 1 / -1;
