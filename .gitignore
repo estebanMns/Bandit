@@ -36,3 +36,4 @@ evaluation/frames/
 Thumbs.db
 .idea/
 .vscode/
+next-env.d.ts
