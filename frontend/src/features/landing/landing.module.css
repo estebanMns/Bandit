@@ -172,4 +172,18 @@
   .limites {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .nav {
+    gap: var(--e-3);
+  }
+
+  .ingresar {
+    padding-inline: var(--e-4);
+  }
+}
+
+@media (max-width: 26rem) {
+  .barra {
+    flex-wrap: wrap;
+  }
 }
