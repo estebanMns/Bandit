@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     whatsapp_phone_number_id: str = ""
     whatsapp_template_name: str = "bandit_incidente"
     whatsapp_template_language: str = "es"
+    whatsapp_api_version: str = "v23.0"
 
     vapid_public_key: str = ""
     vapid_private_key: str = ""
