@@ -7,6 +7,9 @@ import { listIncidents } from "./api";
 import type { Incident } from "./types";
 
 export function upsertIncident(incidents: Incident[], incident: Incident): Incident[] {
+  const existing = incidents.find((item) => item.id === incident.id);
+  // Cada cambio agrega una entrada: una respuesta atrasada nunca pisa un evento más nuevo.
+  if (existing && existing.audit.length > incident.audit.length) return incidents;
   const others = incidents.filter((item) => item.id !== incident.id);
   return [incident, ...others].sort((a, b) => b.detected_at.localeCompare(a.detected_at));
 }
