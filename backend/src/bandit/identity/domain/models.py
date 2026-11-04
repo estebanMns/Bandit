@@ -19,6 +19,9 @@ class User:
     role: Role
     establishment_id: UUID | None = None
 
+    def can_access(self, establishment_id: UUID) -> bool:
+        return self.role is Role.ADMIN or self.establishment_id == establishment_id
+
 
 @dataclass(frozen=True, slots=True)
 class Session:
