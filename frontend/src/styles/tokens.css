@@ -1,0 +1,59 @@
+/* Turno de noche: la calle de madrugada bajo alumbrado de sodio. */
+:root {
+  --noche: #101d42;
+  --asfalto: #26365f;
+  --asfalto-claro: #3a4c7b;
+  --sodio: #ffb000;
+  --baliza: #ff3d6e;
+  --agua: #5ed6d0;
+  --hielo: #e8ecf4;
+  --hielo-tenue: #b4bfd6;
+
+  --fondo: var(--noche);
+  --superficie: var(--asfalto);
+  --borde: var(--asfalto-claro);
+  --texto: var(--hielo);
+  --texto-tenue: var(--hielo-tenue);
+  --accion: var(--sodio);
+  --sobre-accion: var(--noche);
+  --foco: var(--agua);
+
+  --fuente-texto: var(--font-atkinson), system-ui, sans-serif;
+  --fuente-titulo: var(--font-archivo), system-ui, sans-serif;
+
+  /* Escala tipográfica 1.25 */
+  --t-xs: 0.8rem;
+  --t-sm: 0.9rem;
+  --t-md: 1rem;
+  --t-lg: 1.25rem;
+  --t-xl: 1.563rem;
+  --t-2xl: 2.441rem;
+  --t-3xl: clamp(2.8rem, 8vw, 5.96rem);
+
+  --e-1: 0.25rem;
+  --e-2: 0.5rem;
+  --e-3: 0.75rem;
+  --e-4: 1rem;
+  --e-6: 1.5rem;
+  --e-8: 2rem;
+  --e-12: 3rem;
+  --e-20: 5rem;
+
+  /* El radio distingue: controles redondeados, paneles casi rectos como vidrio de cámara. */
+  --radio-control: 999px;
+  --radio-panel: 3px;
+
+  --curva: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* El directorio es de consulta y lectura: papel de archivo bajo luz blanca. */
+[data-tema="archivo"] {
+  --fondo: var(--hielo);
+  --superficie: #ffffff;
+  --borde: #c3cce0;
+  --texto: var(--noche);
+  --texto-tenue: #46557c;
+  --accion: var(--noche);
+  --sobre-accion: var(--hielo);
+  --foco: #0b7f79;
+}
