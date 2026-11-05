@@ -36,8 +36,9 @@ export default function LandingPage() {
         <nav aria-label="Principal" className={styles.nav}>
           <Link href="/guia">Guía</Link>
           <Link href="/directorio">Directorio</Link>
-          <Link href="/ingresar" className={styles.ingresar}>
-            Ingresar
+          <Link href="/ingresar">Ingresar</Link>
+          <Link href="/registrarse" className={styles.ingresar}>
+            Crear cuenta
           </Link>
         </nav>
       </header>
