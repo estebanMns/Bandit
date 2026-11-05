@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { LogoutButton } from "./LogoutButton";
 import styles from "./AppShell.module.css";
 
 const LINKS = [
@@ -34,7 +35,10 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
             </Link>
           ))}
         </nav>
-        <div className={styles.lateral}>{aside}</div>
+        <div className={styles.lateral}>
+          {aside}
+          <LogoutButton />
+        </div>
       </header>
       {children}
     </div>

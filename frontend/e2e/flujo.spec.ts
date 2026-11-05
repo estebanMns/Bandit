@@ -50,7 +50,7 @@ async function expectAccessible(page: Page, label: string) {
 }
 
 test("las pantallas cumplen WCAG 2 AA", async ({ page }) => {
-  for (const path of ["/", "/guia", "/privacidad", "/ingresar", "/directorio"]) {
+  for (const path of ["/", "/guia", "/privacidad", "/ingresar", "/registrarse", "/directorio"]) {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
     await expectAccessible(page, path);
@@ -62,6 +62,57 @@ test("las pantallas cumplen WCAG 2 AA", async ({ page }) => {
     await page.waitForTimeout(1_500);
     await expectAccessible(page, path);
   }
+});
+
+test("una persona nueva se registra, sale y vuelve a entrar", async ({ page }) => {
+  const email = `duena-${Date.now()}@example.com`;
+  const password = "clave-de-prueba-123";
+
+  await page.goto("/");
+  await page.getByRole("link", { name: "Crear cuenta" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Crea tu cuenta");
+  await shot(page, "registro-escritorio");
+  await page.setViewportSize(MOBILE);
+  await shot(page, "registro-movil");
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  await page.getByLabel("Nombre del local").fill("Restaurante de prueba");
+  await page.getByLabel("Dirección").fill("Carrera 5 # 10-20, Neiva");
+  await page.getByLabel("Correo").fill(email);
+  await page.getByLabel("Clave", { exact: true }).fill(password);
+  await page.getByLabel("Repite la clave").fill("otra-clave-distinta");
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  await expect(page.getByText("Las claves no coinciden")).toBeVisible();
+
+  await page.getByLabel("Repite la clave").fill(password);
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  await page.waitForURL("**/monitor");
+  await expect(page.getByRole("heading", { name: "Conecta tu primera cámara" })).toBeVisible();
+
+  await page.goto("/ajustes/local");
+  await expect(page.getByRole("heading", { name: "Restaurante de prueba" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Salir" }).click();
+  await page.waitForURL("**/ingresar");
+  await page.goto("/monitor");
+  await page.waitForURL("**/ingresar");
+
+  await page.getByLabel("Correo").fill(email);
+  await page.getByLabel("Clave").fill(password);
+  await page.getByRole("button", { name: "Ingresar" }).click();
+  await page.waitForURL("**/monitor");
+  await expect(page.getByRole("heading", { name: "Conecta tu primera cámara" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Salir" }).click();
+  await page.waitForURL("**/ingresar");
+  await page.getByRole("link", { name: "Crea una cuenta" }).click();
+  await page.getByLabel("Nombre del local").fill("Otro local");
+  await page.getByLabel("Dirección").fill("Calle 1");
+  await page.getByLabel("Correo").fill(email);
+  await page.getByLabel("Clave", { exact: true }).fill(password);
+  await page.getByLabel("Repite la clave").fill(password);
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  await expect(page.getByText("Ya existe un usuario con ese correo")).toBeVisible();
 });
 
 test("portada y páginas públicas", async ({ page }) => {

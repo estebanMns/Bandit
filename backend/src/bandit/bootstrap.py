@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
+from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -64,6 +65,16 @@ class Application:
     background: BackgroundTasks
 
 
+class _EstablishmentCreator:
+    """Adapta el módulo de locales al puerto que necesita identidad."""
+
+    def __init__(self, establishments: EstablishmentsModule) -> None:
+        self._establishments = establishments
+
+    async def create(self, name: str, address: str) -> UUID:
+        return (await self._establishments.create.execute(name, address)).id
+
+
 def _scene_analyzer(settings: Settings) -> SceneAnalyzer:
     if not settings.gemini_api_key:
         return DisabledSceneAnalyzer()
@@ -109,13 +120,14 @@ def build_application(settings: Settings) -> Application:
     clock = SystemClock()
     bus = InMemoryEventBus()
 
+    establishments = EstablishmentsModule(sessions)
     identity = IdentityModule(
         sessions,
         clock,
         timedelta(hours=settings.session_ttl_hours),
         settings.cookie_secure,
+        _EstablishmentCreator(establishments),
     )
-    establishments = EstablishmentsModule(sessions)
     cameras = CamerasModule(
         sessions,
         FfmpegFrameSource(settings.ffmpeg_path, settings.video_fps, settings.video_width),

@@ -48,6 +48,16 @@ def require_admin(user: CurrentUser) -> User:
 AdminUser = Annotated[User, Depends(require_admin)]
 
 
+def require_manager(user: CurrentUser) -> User:
+    """Puede administrar un local. Cada ruta debe comprobar además cuál."""
+    if user.role not in (Role.ADMIN, Role.OWNER):
+        raise PermissionDeniedError("Esta acción requiere al dueño del local")
+    return user
+
+
+ManagerUser = Annotated[User, Depends(require_manager)]
+
+
 async def authenticate_websocket(websocket: WebSocket) -> User:
     """Valida sesión y origen: un WebSocket no tiene la protección CORS del navegador."""
     origin = websocket.headers.get("origin")

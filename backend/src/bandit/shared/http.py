@@ -10,6 +10,7 @@ from bandit.shared.errors import (
     InvalidDataError,
     NotFoundError,
     PermissionDeniedError,
+    RateLimitedError,
 )
 
 _STATUS_BY_ERROR: dict[type[Exception], int] = {
@@ -18,6 +19,7 @@ _STATUS_BY_ERROR: dict[type[Exception], int] = {
     NotFoundError: status.HTTP_404_NOT_FOUND,
     ConflictError: status.HTTP_409_CONFLICT,
     InvalidDataError: status.HTTP_422_UNPROCESSABLE_CONTENT,
+    RateLimitedError: status.HTTP_429_TOO_MANY_REQUESTS,
 }
 
 

@@ -28,6 +28,15 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=256)
 
 
+class RegisterRequest(BaseModel):
+    """Sin campo de rol: el registro siempre crea un dueño."""
+
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=256)
+    local_name: str = Field(min_length=1, max_length=200)
+    local_address: str = Field(min_length=1, max_length=300)
+
+
 class CreateUserRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=12, max_length=256)
@@ -51,13 +60,11 @@ class UserResponse(BaseModel):
         )
 
 
-@router.post("/login")
-async def login(body: LoginRequest, response: Response, module: Module) -> UserResponse:
-    issued = await module.login.execute(body.email, body.password)
+def _set_session_cookies(response: Response, module: IdentityModule, token: str) -> None:
     max_age = int(module.session_ttl.total_seconds())
     response.set_cookie(
         SESSION_COOKIE,
-        issued.token,
+        token,
         max_age=max_age,
         httponly=True,
         secure=module.cookie_secure,
@@ -73,6 +80,32 @@ async def login(body: LoginRequest, response: Response, module: Module) -> UserR
         samesite="lax",
         path="/",
     )
+
+
+def _client_key(request: Request) -> str:
+    # Caddy reemplaza esta cabecera con la IP real: el cliente no puede falsificarla.
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[-1].strip()
+    return request.client.host if request.client else "desconocido"
+
+
+@router.post("/login")
+async def login(body: LoginRequest, response: Response, module: Module) -> UserResponse:
+    issued = await module.login.execute(body.email, body.password)
+    _set_session_cookies(response, module, issued.token)
+    return UserResponse.of(issued.user)
+
+
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+async def register(
+    body: RegisterRequest, request: Request, response: Response, module: Module
+) -> UserResponse:
+    await module.sign_up.execute(
+        body.email, body.password, body.local_name, body.local_address, _client_key(request)
+    )
+    issued = await module.login.execute(body.email, body.password)
+    _set_session_cookies(response, module, issued.token)
     return UserResponse.of(issued.user)
 
 

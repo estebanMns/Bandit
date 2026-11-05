@@ -10,7 +10,9 @@ export default function GuidePage() {
       <Link href="/">Volver al inicio</Link>
       <h1>Guía para empezar</h1>
       <ol>
-        <li>Ingresa con la cuenta del administrador y registra tu local con su dirección.</li>
+        <li>
+          <Link href="/registrarse">Crea tu cuenta</Link> con el nombre y la dirección de tu local.
+        </li>
         <li>Pide a la unidad del CAI cercano autorización para escribirles por WhatsApp.</li>
         <li>Guarda ese número en Local y envía un mensaje de prueba.</li>
         <li>Agrega tus cámaras con su dirección RTSP. Se guarda cifrada.</li>

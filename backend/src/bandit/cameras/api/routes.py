@@ -10,8 +10,8 @@ from pydantic import BaseModel, Field
 from bandit.cameras.domain.models import Camera, CameraStatus, Frame
 from bandit.cameras.module import CamerasModule
 from bandit.identity.public import (
-    AdminUser,
     CurrentUser,
+    ManagerUser,
     User,
     authenticate_websocket,
     require_csrf,
@@ -79,15 +79,17 @@ async def list_cameras(
     dependencies=[Depends(require_csrf)],
 )
 async def create_camera(
-    establishment_id: UUID, body: CreateCameraRequest, _: AdminUser, module: Module
+    establishment_id: UUID, body: CreateCameraRequest, user: ManagerUser, module: Module
 ) -> CameraResponse:
+    _ensure_access(user, establishment_id)
     return _response(await module.register.execute(establishment_id, body.name, body.url), module)
 
 
 @router.patch("/cameras/{camera_id}", dependencies=[Depends(require_csrf)])
 async def update_camera(
-    camera_id: UUID, body: UpdateCameraRequest, _: AdminUser, module: Module
+    camera_id: UUID, body: UpdateCameraRequest, user: ManagerUser, module: Module
 ) -> CameraResponse:
+    _ensure_access(user, (await module.get.execute(camera_id)).establishment_id)
     return _response(await module.set_enabled.execute(camera_id, body.enabled), module)
 
 
@@ -96,7 +98,8 @@ async def update_camera(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(require_csrf)],
 )
-async def delete_camera(camera_id: UUID, _: AdminUser, module: Module) -> None:
+async def delete_camera(camera_id: UUID, user: ManagerUser, module: Module) -> None:
+    _ensure_access(user, (await module.get.execute(camera_id)).establishment_id)
     await module.remove.execute(camera_id)
 
 

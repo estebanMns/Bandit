@@ -45,6 +45,19 @@
   color: var(--texto);
 }
 
+.salir {
+  padding: var(--e-1) var(--e-2);
+  border: 0;
+  background: none;
+  color: var(--texto-tenue);
+  font: inherit;
+  cursor: pointer;
+}
+
+.salir:hover {
+  color: var(--texto);
+}
+
 .lateral {
   display: flex;
   align-items: center;

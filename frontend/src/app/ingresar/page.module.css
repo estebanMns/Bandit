@@ -22,3 +22,33 @@
   gap: var(--e-4);
   margin-top: var(--e-4);
 }
+
+.alterno {
+  color: var(--texto-tenue);
+}
+
+.alterno a {
+  color: var(--sodio);
+  font-weight: 700;
+}
+
+.grupo {
+  display: grid;
+  gap: var(--e-4);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.grupo legend {
+  margin-bottom: var(--e-3);
+  padding: 0;
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-lg);
+  font-stretch: 112%;
+  font-weight: 700;
+}
+
+.registro {
+  padding-block: var(--e-8);
+}

@@ -3,10 +3,12 @@
 from uuid import UUID
 
 from sqlalchemy import delete, func, select
+from sqlalchemy.exc import IntegrityError
 
 from bandit.identity.domain.models import Role, Session, User
 from bandit.identity.infrastructure.tables import SessionRow, UserRow
 from bandit.shared.db import SessionFactory
+from bandit.shared.errors import ConflictError
 
 
 def _to_user(row: UserRow) -> User:
@@ -24,16 +26,20 @@ class SqlUserRepository:
         self._sessions = sessions
 
     async def add(self, user: User) -> None:
-        async with self._sessions.begin() as session:
-            session.add(
-                UserRow(
-                    id=user.id,
-                    email=user.email,
-                    password_hash=user.password_hash,
-                    role=user.role.value,
-                    establishment_id=user.establishment_id,
+        try:
+            async with self._sessions.begin() as session:
+                session.add(
+                    UserRow(
+                        id=user.id,
+                        email=user.email,
+                        password_hash=user.password_hash,
+                        role=user.role.value,
+                        establishment_id=user.establishment_id,
+                    )
                 )
-            )
+        except IntegrityError as error:
+            # Dos registros simultáneos con el mismo correo: la base de datos decide.
+            raise ConflictError("Ya existe un usuario con ese correo") from error
 
     async def get(self, user_id: UUID) -> User | None:
         async with self._sessions() as session:

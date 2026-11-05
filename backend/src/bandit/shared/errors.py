@@ -21,5 +21,9 @@ class AuthenticationError(DomainError):
     """No hay una sesión válida."""
 
 
+class RateLimitedError(DomainError):
+    """Demasiados intentos en poco tiempo."""
+
+
 class PermissionDeniedError(DomainError):
     """La sesión no tiene permiso para la operación."""

@@ -21,14 +21,25 @@ cp .env.example .env
 ```
 
 Completa en `.env`, como mínimo, `POSTGRES_PASSWORD`, el mismo valor dentro de `DATABASE_URL`,
-`CAMERA_ENCRYPTION_KEY`, `REVALIDATE_SECRET`, `BOOTSTRAP_ADMIN_EMAIL` y
-`BOOTSTRAP_ADMIN_PASSWORD` (mínimo 12 caracteres).
+`CAMERA_ENCRYPTION_KEY` y `REVALIDATE_SECRET`.
 
 ```bash
 docker compose up -d --build
 ```
 
-Abre <http://localhost:8080>, ingresa con el administrador y sigue la guía en `/guia`.
+Abre <http://localhost:8080>, pulsa **Crear cuenta** y registra tu local. Luego sigue la guía
+en `/guia`.
+
+### Cuentas y roles
+
+| Rol | Cómo se crea | Alcance |
+|---|---|---|
+| Dueño | Registro en `/registrarse` | Administra solo su local |
+| Operador | Un administrador, por `POST /api/auth/users` | Vigila y decide en su local |
+| Administrador | `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD` en `.env`, opcional | Ve todos los locales y sincroniza el directorio |
+
+La sincronización manual del directorio requiere un administrador. La extracción programada corre
+sola. El registro no verifica el correo y está limitado a 5 cuentas por hora por conexión.
 
 ### Funciones que requieren credenciales
 
@@ -136,3 +147,6 @@ El informe compara aciertos, falsos positivos, latencia y costo mínimo por mode
   situación inexistente, por eso la confirmación humana es obligatoria.
 - Usa HTTPS y `COOKIE_SECURE=true`. Service Worker y Web Push lo exigen fuera de `localhost`.
 - WhatsApp no sustituye a la línea 123.
+- Si lo publicas en internet, agrega verificación de correo o invitaciones. El registro abierto
+  permite que cualquiera cree cuentas y apunte a direcciones RTSP desde tu servidor, y el tope
+  diario de Gemini lo comparten todos los locales.
