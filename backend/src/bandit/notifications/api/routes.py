@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import AnyHttpUrl, BaseModel, Field
 
-from bandit.identity.public import AdminUser, CurrentUser, require_csrf
+from bandit.identity.public import CurrentUser, ManagerUser, User, require_csrf
 from bandit.notifications.domain.models import PushTarget
 from bandit.notifications.module import NotificationsModule
 from bandit.shared.errors import DomainError, PermissionDeniedError
@@ -32,12 +32,18 @@ class PushSubscriptionRequest(BaseModel):
     keys: PushKeys
 
 
+def _ensure_access(user: User, establishment_id: UUID) -> None:
+    if not user.can_access(establishment_id):
+        raise PermissionDeniedError("No tienes acceso a este local")
+
+
 @router.post(
     "/whatsapp-test",
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(require_csrf)],
 )
-async def send_whatsapp_test(establishment_id: UUID, _: AdminUser, module: Module) -> None:
+async def send_whatsapp_test(establishment_id: UUID, user: ManagerUser, module: Module) -> None:
+    _ensure_access(user, establishment_id)
     try:
         await module.send_test_message.execute(establishment_id)
     except DomainError:
@@ -57,8 +63,7 @@ async def send_whatsapp_test(establishment_id: UUID, _: AdminUser, module: Modul
 async def subscribe_push(
     establishment_id: UUID, body: PushSubscriptionRequest, user: CurrentUser, module: Module
 ) -> None:
-    if not user.can_access(establishment_id):
-        raise PermissionDeniedError("No tienes acceso a este local")
+    _ensure_access(user, establishment_id)
     await module.register_push_target.execute(
         establishment_id, PushTarget(str(body.endpoint), body.keys.p256dh, body.keys.auth)
     )
