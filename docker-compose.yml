@@ -1,6 +1,8 @@
 services:
+  # Opcional: Bandit usa la base de DATABASE_URL, por ejemplo Supabase.
   db:
     image: postgres:17-alpine
+    profiles: [db-local]
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -18,9 +20,6 @@ services:
     env_file: .env
     volumes:
       - media-data:/app/var/media
-    depends_on:
-      db:
-        condition: service_healthy
 
   frontend:
     build:
