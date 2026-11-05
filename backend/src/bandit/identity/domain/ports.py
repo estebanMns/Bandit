@@ -24,6 +24,12 @@ class SessionRepository(Protocol):
     async def delete(self, token_hash: str) -> None: ...
 
 
+class EstablishmentCreator(Protocol):
+    """Crea el local de una cuenta nueva sin que identidad conozca ese módulo."""
+
+    async def create(self, name: str, address: str) -> UUID: ...
+
+
 class PasswordHasher(Protocol):
     def hash(self, password: str) -> str: ...
 
