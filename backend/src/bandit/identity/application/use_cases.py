@@ -6,11 +6,21 @@ from dataclasses import dataclass
 from datetime import timedelta
 from uuid import UUID, uuid4
 
-from bandit.identity.application.throttle import LoginThrottle
+from bandit.identity.application.throttle import AttemptThrottle
 from bandit.identity.domain.models import Role, Session, User
-from bandit.identity.domain.ports import PasswordHasher, SessionRepository, UserRepository
+from bandit.identity.domain.ports import (
+    EstablishmentCreator,
+    PasswordHasher,
+    SessionRepository,
+    UserRepository,
+)
 from bandit.shared.clock import Clock
-from bandit.shared.errors import AuthenticationError, ConflictError, InvalidDataError
+from bandit.shared.errors import (
+    AuthenticationError,
+    ConflictError,
+    InvalidDataError,
+    RateLimitedError,
+)
 
 MIN_PASSWORD_LENGTH = 12
 
@@ -34,14 +44,17 @@ class RegisterUser:
         self._users = users
         self._hasher = hasher
 
+    async def validate(self, email: str, password: str) -> None:
+        if len(password) < MIN_PASSWORD_LENGTH:
+            raise InvalidDataError(f"La clave debe tener al menos {MIN_PASSWORD_LENGTH} caracteres")
+        if await self._users.get_by_email(_normalize_email(email)):
+            raise ConflictError("Ya existe un usuario con ese correo")
+
     async def execute(
         self, email: str, password: str, role: Role, establishment_id: UUID | None = None
     ) -> User:
-        if len(password) < MIN_PASSWORD_LENGTH:
-            raise InvalidDataError(f"La clave debe tener al menos {MIN_PASSWORD_LENGTH} caracteres")
+        await self.validate(email, password)
         normalized = _normalize_email(email)
-        if await self._users.get_by_email(normalized):
-            raise ConflictError("Ya existe un usuario con ese correo")
         user = User(
             id=uuid4(),
             email=normalized,
@@ -51,6 +64,33 @@ class RegisterUser:
         )
         await self._users.add(user)
         return user
+
+
+class SignUp:
+    """Registro abierto: crea un local y su dueño. Nunca concede el rol de administrador."""
+
+    def __init__(
+        self,
+        register: RegisterUser,
+        establishments: EstablishmentCreator,
+        throttle: AttemptThrottle,
+        clock: Clock,
+    ) -> None:
+        self._register = register
+        self._establishments = establishments
+        self._throttle = throttle
+        self._clock = clock
+
+    async def execute(
+        self, email: str, password: str, local_name: str, local_address: str, client_key: str
+    ) -> User:
+        now = self._clock.now()
+        if self._throttle.is_blocked(client_key, now):
+            raise RateLimitedError("Demasiados registros desde esta conexión. Espera un momento.")
+        await self._register.validate(email, password)
+        self._throttle.record(client_key, now)
+        establishment_id = await self._establishments.create(local_name, local_address)
+        return await self._register.execute(email, password, Role.OWNER, establishment_id)
 
 
 class BootstrapAdmin:
@@ -73,7 +113,7 @@ class Login:
         hasher: PasswordHasher,
         clock: Clock,
         ttl: timedelta,
-        throttle: LoginThrottle,
+        throttle: AttemptThrottle,
     ) -> None:
         self._users = users
         self._sessions = sessions
@@ -94,7 +134,7 @@ class Login:
         stored_hash = user.password_hash if user else self._decoy_hash
         verified = self._hasher.verify(stored_hash, password)
         if user is None or not verified:
-            self._throttle.record_failure(normalized, now)
+            self._throttle.record(normalized, now)
             raise AuthenticationError("Correo o clave incorrectos")
 
         self._throttle.reset(normalized)
