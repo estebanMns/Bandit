@@ -20,8 +20,19 @@ Requisitos: Docker Desktop.
 cp .env.example .env
 ```
 
-Completa en `.env`, como mínimo, `POSTGRES_PASSWORD`, el mismo valor dentro de `DATABASE_URL`,
-`CAMERA_ENCRYPTION_KEY` y `REVALIDATE_SECRET`.
+Completa en `.env`, como mínimo, `DATABASE_URL`, `CAMERA_ENCRYPTION_KEY` y `REVALIDATE_SECRET`.
+
+### Base de datos
+
+**Con Supabase:** en **Connect** elige **Session pooler** y copia la URI. Cambia el inicio por
+`postgresql+asyncpg://`. El usuario debe ser `postgres.<id-del-proyecto>`. No uses la conexión
+directa, que solo funciona por IPv6, ni el Transaction pooler. Las migraciones crean las tablas
+y activan RLS para bloquear la API pública de Supabase.
+
+**Con PostgreSQL local:** define `POSTGRES_PASSWORD`, usa el mismo valor en `DATABASE_URL` y
+agrega `--profile db-local` al comando de abajo.
+
+### Arrancar
 
 ```bash
 docker compose up -d --build
