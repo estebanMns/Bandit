@@ -220,3 +220,169 @@ def test_video_socket_rejects_unknown_cameras(client: TestClient) -> None:
 
     with pytest.raises(WebSocketDisconnect), client.websocket_connect(f"/ws/video/{uuid4()}"):
         pass
+
+
+def register(client: TestClient, email: str, local: str = "Bar") -> dict[str, str]:
+    client.cookies.clear()
+    response = client.post(
+        "/api/auth/register",
+        json={
+            "email": email,
+            "password": PASSWORD,
+            "local_name": local,
+            "local_address": "Calle 1",
+        },
+    )
+    assert response.status_code == 201, response.text
+    return {"X-CSRF-Token": client.cookies["bandit_csrf"]}
+
+
+def only_local(client: TestClient) -> str:
+    return client.get("/api/establishments").json()[0]["id"]
+
+
+def test_register_logs_in_as_owner_of_a_new_local(client: TestClient) -> None:
+    register(client, "duena@example.com", "La Esquina")
+
+    assert client.get("/api/auth/me").json()["role"] == "owner"
+    assert [local["name"] for local in client.get("/api/establishments").json()] == ["La Esquina"]
+
+
+def test_register_ignores_a_requested_role(client: TestClient) -> None:
+    response = client.post(
+        "/api/auth/register",
+        json={
+            "email": "intruso@example.com",
+            "password": PASSWORD,
+            "local_name": "Bar",
+            "local_address": "Calle 1",
+            "role": "admin",
+        },
+    )
+
+    assert response.json()["role"] == "owner"
+
+
+def test_register_rejects_a_repeated_email(client: TestClient) -> None:
+    register(client, "duena@example.com")
+
+    response = client.post(
+        "/api/auth/register",
+        json={
+            "email": "DUENA@example.com",
+            "password": PASSWORD,
+            "local_name": "Otro",
+            "local_address": "Calle 2",
+        },
+    )
+
+    assert response.status_code == 409
+
+
+def test_register_explains_a_short_password(client: TestClient) -> None:
+    response = client.post(
+        "/api/auth/register",
+        json={
+            "email": "duena@example.com",
+            "password": "corta",
+            "local_name": "Bar",
+            "local_address": "Calle 1",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "12 caracteres" in response.json()["detail"]
+
+
+def test_register_is_rate_limited(client: TestClient) -> None:
+    for number in range(5):
+        register(client, f"u{number}@example.com")
+
+    response = client.post(
+        "/api/auth/register",
+        json={
+            "email": "u9@example.com",
+            "password": PASSWORD,
+            "local_name": "Bar",
+            "local_address": "Calle 1",
+        },
+    )
+
+    assert response.status_code == 429
+
+
+def test_owner_manages_own_cameras(client: TestClient) -> None:
+    headers = register(client, "duena@example.com")
+    local = only_local(client)
+
+    created = client.post(
+        f"/api/establishments/{local}/cameras",
+        json={"name": "Barra", "url": RTSP_URL},
+        headers=headers,
+    )
+    camera = created.json()["id"]
+
+    assert created.status_code == 201
+    assert (
+        client.patch(f"/api/cameras/{camera}", json={"enabled": False}, headers=headers).status_code
+        == 200
+    )
+    assert client.delete(f"/api/cameras/{camera}", headers=headers).status_code == 204
+
+
+def test_owners_cannot_touch_each_other(client: TestClient) -> None:
+    victim_headers = register(client, "victima@example.com", "Ajeno")
+    victim_local = only_local(client)
+    camera = client.post(
+        f"/api/establishments/{victim_local}/cameras",
+        json={"name": "Barra", "url": RTSP_URL},
+        headers=victim_headers,
+    ).json()["id"]
+
+    headers = register(client, "intruso@example.com", "Propio")
+
+    assert victim_local not in [local["id"] for local in client.get("/api/establishments").json()]
+    for response in (
+        client.get(f"/api/establishments/{victim_local}"),
+        client.get(f"/api/establishments/{victim_local}/cameras"),
+        client.get(f"/api/establishments/{victim_local}/incidents"),
+        client.post(
+            f"/api/establishments/{victim_local}/cameras",
+            json={"name": "Espía", "url": RTSP_URL},
+            headers=headers,
+        ),
+        client.patch(f"/api/cameras/{camera}", json={"enabled": False}, headers=headers),
+        client.delete(f"/api/cameras/{camera}", headers=headers),
+        client.put(
+            f"/api/establishments/{victim_local}/cai-whatsapp",
+            json={"number": "+573001234567"},
+            headers=headers,
+        ),
+        client.post(f"/api/establishments/{victim_local}/whatsapp-test", headers=headers),
+    ):
+        assert response.status_code == 403, response.request.url
+
+    with pytest.raises(WebSocketDisconnect), client.websocket_connect(f"/ws/video/{camera}"):
+        pass
+    with pytest.raises(WebSocketDisconnect), client.websocket_connect(f"/ws/events/{victim_local}"):
+        pass
+
+
+def test_owner_has_no_global_powers(client: TestClient) -> None:
+    headers = register(client, "duena@example.com")
+
+    assert (
+        client.post(
+            "/api/establishments", json={"name": "Otro", "address": "Calle"}, headers=headers
+        ).status_code
+        == 403
+    )
+    assert (
+        client.post(
+            "/api/auth/users",
+            json={"email": "x@example.com", "password": PASSWORD, "role": "admin"},
+            headers=headers,
+        ).status_code
+        == 403
+    )
+    assert client.post("/api/directory/sync", headers=headers).status_code == 403
