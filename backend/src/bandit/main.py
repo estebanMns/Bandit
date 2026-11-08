@@ -11,6 +11,7 @@ from bandit.bootstrap import Application, build_application
 from bandit.cameras.api.routes import router as cameras_router
 from bandit.cameras.api.routes import video_router
 from bandit.directory.api.routes import router as directory_router
+from bandit.directory.domain.models import SyncTrigger
 from bandit.establishments.api.routes import router as establishments_router
 from bandit.identity.api.routes import router as identity_router
 from bandit.incidents.api.routes import router as incidents_router
@@ -24,8 +25,9 @@ def _build_scheduler(application: Application, settings: Settings) -> AsyncIOSch
     scheduler = AsyncIOScheduler(timezone="UTC")
     scheduler.add_job(application.incidents.purge_evidence.execute, "interval", hours=6)
     scheduler.add_job(
-        application.directory.sync.execute,
+        application.directory.runner.run,
         "interval",
+        args=[SyncTrigger.SCHEDULED],
         hours=settings.directory_scrape_interval_hours,
     )
     return scheduler
@@ -43,7 +45,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         scheduler.start()
         await application.cameras.supervisor.start_all()
+        await application.directory.runner.start_if_stale()
         yield
+        await application.directory.runner.stop()
         await application.cameras.supervisor.stop_all()
         await application.analysis.supervisor.stop_all()
         await application.background.wait_all()
