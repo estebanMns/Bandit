@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 
+from bandit.analysis.api.routes import router as analysis_router
 from bandit.bootstrap import Application, build_application
 from bandit.cameras.api.routes import router as cameras_router
 from bandit.cameras.api.routes import video_router
@@ -53,6 +54,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.identity = application.identity
     app.state.establishments = application.establishments
     app.state.cameras = application.cameras
+    app.state.analysis = application.analysis
     app.state.incidents = application.incidents
     app.state.notifications = application.notifications
     app.state.directory = application.directory
@@ -63,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         establishments_router,
         cameras_router,
         video_router,
+        analysis_router,
         incidents_router,
         notifications_router,
         directory_router,
