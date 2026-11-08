@@ -79,7 +79,8 @@ export function DirectoryPanel() {
               : last.error
                 ? `Falló (${last.error}).`
                 : "No terminó; el directorio quedó como estaba.")}
-        {!last && !status?.running && "Todavía no se ha hecho ninguna extracción."}
+        {!status && !message && "Cargando el estado de la extracción…"}
+        {status && !last && !status.running && "Todavía no se ha hecho ninguna extracción."}
         {message && ` ${message}`}
       </p>
 
