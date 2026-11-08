@@ -27,7 +27,9 @@ def _ensure_access(user: User, establishment_id: UUID) -> None:
 
 
 @router.get("/establishments/{establishment_id}/analysis-activity")
-async def get_activity(establishment_id: UUID, user: CurrentUser, module: Module) -> ActivityResponse:
+async def get_activity(
+    establishment_id: UUID, user: CurrentUser, module: Module
+) -> ActivityResponse:
     _ensure_access(user, establishment_id)
     return ActivityResponse(
         model_enabled=module.model_enabled,
