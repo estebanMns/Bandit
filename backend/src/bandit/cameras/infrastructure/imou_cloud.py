@@ -15,7 +15,7 @@ import httpx
 _TOKEN_MARGIN_SECONDS = 300
 _LIVE_ALREADY_EXISTS = "LV1001"
 _LIVE_MISSING = {"LV1002", "LV1005"}
-_TOKEN_EXPIRED = "TK1002"
+_TOKEN_EXPIRED = "TK1002"  # noqa: S105  Es un código de error, no una clave.
 _STREAM_ON = "1"
 
 
