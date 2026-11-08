@@ -8,6 +8,7 @@ import styles from "./AppShell.module.css";
 
 const LINKS = [
   { href: "/monitor", label: "Monitor" },
+  { href: "/actividad", label: "Actividad IA" },
   { href: "/incidentes", label: "Incidentes" },
   { href: "/directorio", label: "Directorio" },
   { href: "/ajustes/camaras", label: "Cámaras" },
