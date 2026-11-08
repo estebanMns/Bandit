@@ -1,6 +1,7 @@
 """Pruebas de punta a punta de la capa HTTP: sesión, CSRF, permisos y secretos."""
 
 import asyncio
+import time
 from collections.abc import Iterator
 from pathlib import Path
 from uuid import uuid4
@@ -385,7 +386,6 @@ def test_owner_has_no_global_powers(client: TestClient) -> None:
         ).status_code
         == 403
     )
-    assert client.post("/api/directory/sync", headers=headers).status_code == 403
 
 
 def test_activity_panel_starts_empty_for_the_owner(client: TestClient) -> None:
@@ -408,3 +408,26 @@ def test_activity_panel_is_private_to_each_local(client: TestClient) -> None:
 
     assert client.get(f"/api/establishments/{first}/analysis-activity").status_code == 403
     assert client.get(f"/api/analysis/cameras/{uuid4()}/last-frame").status_code == 404
+
+
+def wait_for_idle_directory(client: TestClient) -> dict[str, object]:
+    for _ in range(50):
+        status = client.get("/api/directory/sync-runs").json()
+        if not status["running"]:
+            return status
+        time.sleep(0.05)
+    raise AssertionError("La extracción no terminó")
+
+
+def test_directory_extraction_runs_at_startup_and_limits_manual_runs(
+    client: TestClient,
+) -> None:
+    headers = register(client, "dueno-directorio@example.com")
+
+    status = wait_for_idle_directory(client)
+    assert [run["trigger"] for run in status["runs"]] == ["startup"]
+    assert client.post("/api/directory/sync", headers=headers).status_code == 429
+
+
+def test_directory_status_requires_a_session(client: TestClient) -> None:
+    assert client.get("/api/directory/sync-runs").status_code == 401
