@@ -1,8 +1,10 @@
 """Composición del módulo de análisis."""
 
+from bandit.analysis.application.activity import ActivityTracker
 from bandit.analysis.application.budget import DailyBudget
 from bandit.analysis.application.camera_analysis import AnalysisPolicy
 from bandit.analysis.application.supervisor import AnalysisSupervisor
+from bandit.analysis.domain.models import AnalysisActivity
 from bandit.analysis.domain.ports import SceneAnalyzer
 from bandit.analysis.infrastructure.pillow_motion import PillowMotionDetector
 from bandit.cameras.public import FrameHub, GetCamera
@@ -21,12 +23,15 @@ class AnalysisModule:
         bus: EventBus,
         clock: Clock,
     ) -> None:
+        self.budget = DailyBudget(settings.analysis_daily_call_limit, clock)
+        self.activity = ActivityTracker()
+        bus.subscribe(AnalysisActivity, self.activity.record)
         self.supervisor = AnalysisSupervisor(
             frames,
             get_camera,
             analyzer,
             PillowMotionDetector(),
-            DailyBudget(settings.analysis_daily_call_limit, clock),
+            self.budget,
             settings.gemini_max_concurrency,
             bus,
             AnalysisPolicy(
