@@ -168,6 +168,7 @@ def build_application(settings: Settings) -> Application:
         FileMediaStore(str(Path(settings.media_root) / "directory")),
         NextRevalidator(settings.frontend_internal_url, settings.revalidate_secret),
         clock,
+        timedelta(hours=settings.directory_scrape_interval_hours),
     )
     application = Application(
         engine=engine,
