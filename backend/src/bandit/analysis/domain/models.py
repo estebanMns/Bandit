@@ -49,6 +49,34 @@ class SceneAssessment:
         return cls(SituationType.NONE, Severity.LOW, 1.0, "")
 
 
+class ActivityOutcome(StrEnum):
+    """Qué pasó con un fotograma muestreado."""
+
+    ANALYZED = "analyzed"
+    NO_MOTION = "no_motion"
+    OVER_BUDGET = "over_budget"
+    ERROR = "error"
+    FILTERED = "filtered"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalysisActivity(DomainEvent):
+    """Rastro de cada muestreo, para mostrar en vivo lo que hace el modelo."""
+
+    camera_id: UUID
+    establishment_id: UUID
+    camera_name: str
+    at: datetime
+    outcome: ActivityOutcome
+    motion: float
+    assessment: SceneAssessment | None
+    streak: int
+    streak_target: int
+    alerted: bool
+    # Solo en memoria: nunca se guarda en disco ni viaja por el WebSocket.
+    jpeg: bytes | None
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class SituationDetected(DomainEvent):
     camera_id: UUID
