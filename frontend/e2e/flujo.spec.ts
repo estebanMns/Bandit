@@ -56,7 +56,7 @@ test("las pantallas cumplen WCAG 2 AA", async ({ page }) => {
     await expectAccessible(page, path);
   }
   await login(page);
-  for (const path of ["/monitor", "/incidentes", "/ajustes/camaras", "/ajustes/local"]) {
+  for (const path of ["/monitor", "/actividad", "/incidentes", "/ajustes/camaras", "/ajustes/local"]) {
     await page.goto(path);
     // El video mantiene la red ocupada: se espera a que la pantalla cargue sus datos.
     await page.waitForTimeout(1_500);
@@ -226,4 +226,15 @@ test("directorio y copia sin conexión", async ({ page, context }) => {
   await page.goto("/guia").catch(() => undefined);
   await expect(page.getByRole("heading", { name: "No hay conexión" })).toBeVisible();
   await context.setOffline(false);
+});
+
+test("el panel de actividad muestra el modelo, el presupuesto y el directorio", async ({ page }) => {
+  await login(page);
+  await page.goto("/actividad");
+
+  await expect(page.getByRole("heading", { name: "Actividad de la IA" })).toBeVisible();
+  await expect(page.getByText(/de \d+/).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Los más buscados" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /extracción|Gemini/ })).toBeVisible();
+  await shot(page, "actividad");
 });
