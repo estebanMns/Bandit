@@ -1,5 +1,6 @@
 """Convierte eventos de dominio en mensajes para el navegador."""
 
+from bandit.analysis.public import ActivityEntryResponse, AnalysisActivity
 from bandit.cameras.public import CameraStatusChanged
 from bandit.incidents.public import IncidentChanged, IncidentResponse
 from bandit.realtime.application.event_hub import EventHub
@@ -20,4 +21,15 @@ class LiveEventPublisher:
         self._hub.publish(
             event.establishment_id,
             {"type": "camera", "cameraId": str(event.camera_id), "status": event.status.value},
+        )
+
+    async def on_analysis_activity(self, event: AnalysisActivity) -> None:
+        entry = ActivityEntryResponse.of(event.camera_id, event)
+        self._hub.publish(
+            event.establishment_id,
+            {
+                "type": "analysis",
+                "cameraName": event.camera_name,
+                "entry": entry.model_dump(mode="json"),
+            },
         )
