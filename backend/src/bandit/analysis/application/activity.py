@@ -1,4 +1,4 @@
-"""Memoria corta de lo que el modelo ha visto, para el panel de actividad. Nada se guarda en disco."""
+"""Memoria corta de lo que el modelo ha visto, para el panel. Nada se guarda en disco."""
 
 from collections import Counter, deque
 from dataclasses import dataclass, field
@@ -69,7 +69,10 @@ class ActivityTracker:
         )
         if previous is not None:
             activity.recent.extend(previous.recent)
-            activity.last_frame, activity.last_frame_at = previous.last_frame, previous.last_frame_at
+            activity.last_frame, activity.last_frame_at = (
+                previous.last_frame,
+                previous.last_frame_at,
+            )
         return activity
 
     def for_establishment(self, establishment_id: UUID) -> list[CameraActivity]:
