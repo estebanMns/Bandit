@@ -26,7 +26,9 @@ export function useActivity(establishmentId: string | undefined) {
     (event: ServerEvent) => {
       if (event.type === "sync") void reload();
       if (event.type === "analysis") {
-        setSnapshot((current) => (current ? applyEntry(current, event.cameraName, event.entry) : current));
+        setSnapshot((current) =>
+          current ? applyEntry(current, event.cameraName, event.entry) : current,
+        );
       }
     },
     [reload],
