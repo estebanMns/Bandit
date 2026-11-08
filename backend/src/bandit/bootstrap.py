@@ -18,6 +18,8 @@ from bandit.cameras.domain.models import CameraStatusChanged
 from bandit.cameras.infrastructure import tables as camera_tables  # noqa: F401
 from bandit.cameras.infrastructure.fernet_cipher import FernetUrlCipher
 from bandit.cameras.infrastructure.ffmpeg_source import FfmpegFrameSource
+from bandit.cameras.infrastructure.imou_cloud import ImouCloudResolver
+from bandit.cameras.infrastructure.resolving_source import ResolvingFrameSource
 from bandit.cameras.module import CamerasModule
 from bandit.directory.domain.ports import DirectoryAgent
 from bandit.directory.infrastructure import tables as directory_tables  # noqa: F401
@@ -131,7 +133,12 @@ def build_application(settings: Settings) -> Application:
     )
     cameras = CamerasModule(
         sessions,
-        FfmpegFrameSource(settings.ffmpeg_path, settings.video_fps, settings.video_width),
+        ResolvingFrameSource(
+            FfmpegFrameSource(settings.ffmpeg_path, settings.video_fps, settings.video_width),
+            ImouCloudResolver(
+                settings.imou_app_id, settings.imou_app_secret, settings.imou_api_url
+            ),
+        ),
         FernetUrlCipher(settings.camera_encryption_key),
         bus,
         clock,
