@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 
 from bandit.directory.application.tools import SOURCE_URL
@@ -66,6 +68,7 @@ def build(sessions, clock, media, revalidator, names, published=None, finish=Tru
         media,
         revalidator,
         clock,
+        timedelta(hours=24),
     )
 
 
