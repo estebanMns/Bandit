@@ -38,7 +38,9 @@ class ActivityEntryResponse(BaseModel):
     alerted: bool
 
     @classmethod
-    def of(cls, camera_id: UUID, entry: ActivityEntry | AnalysisActivity) -> "ActivityEntryResponse":
+    def of(
+        cls, camera_id: UUID, entry: ActivityEntry | AnalysisActivity
+    ) -> "ActivityEntryResponse":
         return cls(
             camera_id=camera_id,
             at=entry.at,
