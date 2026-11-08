@@ -23,6 +23,7 @@ class AnalysisModule:
         bus: EventBus,
         clock: Clock,
     ) -> None:
+        self.model_enabled = bool(settings.gemini_api_key)
         self.budget = DailyBudget(settings.analysis_daily_call_limit, clock)
         self.activity = ActivityTracker()
         bus.subscribe(AnalysisActivity, self.activity.record)
