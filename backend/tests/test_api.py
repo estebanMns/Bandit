@@ -386,3 +386,25 @@ def test_owner_has_no_global_powers(client: TestClient) -> None:
         == 403
     )
     assert client.post("/api/directory/sync", headers=headers).status_code == 403
+
+
+def test_activity_panel_starts_empty_for_the_owner(client: TestClient) -> None:
+    register(client, "panel@example.com")
+    local = only_local(client)
+
+    response = client.get(f"/api/establishments/{local}/analysis-activity")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["cameras"] == []
+    assert body["budget"]["used"] == 0
+    assert body["model_enabled"] is False
+
+
+def test_activity_panel_is_private_to_each_local(client: TestClient) -> None:
+    register(client, "uno@example.com", "Uno")
+    first = only_local(client)
+    register(client, "dos@example.com", "Dos")
+
+    assert client.get(f"/api/establishments/{first}/analysis-activity").status_code == 403
+    assert client.get(f"/api/analysis/cameras/{uuid4()}/last-frame").status_code == 404
