@@ -39,7 +39,10 @@ export function applyEntry(
   const updated: CameraActivity = {
     ...camera,
     camera_name: cameraName,
-    counts: { ...camera.counts, [entry.outcome]: camera.counts[entry.outcome] + 1 },
+    counts: {
+      ...camera.counts,
+      [entry.outcome]: camera.counts[entry.outcome] + 1,
+    },
     has_frame: camera.has_frame || withFrame,
     last_frame_at: withFrame ? entry.at : camera.last_frame_at,
     recent: [entry, ...camera.recent].slice(0, RECENT_LIMIT),
@@ -57,9 +60,17 @@ export function applyEntry(
 }
 
 /** Todas las evaluaciones de todas las cámaras, de la más reciente a la más antigua. */
-export function timeline(snapshot: ActivitySnapshot, limit = 30): (ActivityEntry & { camera_name: string })[] {
+export function timeline(
+  snapshot: ActivitySnapshot,
+  limit = 30,
+): (ActivityEntry & { camera_name: string })[] {
   return snapshot.cameras
-    .flatMap((camera) => camera.recent.map((entry) => ({ ...entry, camera_name: camera.camera_name })))
+    .flatMap((camera) =>
+      camera.recent.map((entry) => ({
+        ...entry,
+        camera_name: camera.camera_name,
+      })),
+    )
     .sort((a, b) => b.at.localeCompare(a.at))
     .slice(0, limit);
 }
