@@ -59,6 +59,7 @@ sola. El registro no verifica el correo y está limitado a 5 cuentas por hora po
 | Detección y extracción con Gemini | `GEMINI_API_KEY` | El video funciona, pero no hay detección ni extracción |
 | Alertas por WhatsApp | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | El aviso falla de forma visible y se puede reintentar |
 | Web Push | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No aparece la opción de notificaciones |
+| Cámaras Imou por su nube | `IMOU_APP_ID`, `IMOU_APP_SECRET`, `IMOU_API_URL` | Solo se pueden usar cámaras `rtsp://` |
 
 ### Plantilla de WhatsApp
 
@@ -72,6 +73,19 @@ Mensaje confirmado por el personal del local.
 ```
 
 Acuerda con el CAI el uso de su número antes de registrarlo.
+
+### Cámara Imou sin acceso por la red local
+
+Si el servidor de Bandit no alcanza la cámara por la red, Bandit puede pedir el video a la nube de
+Imou. Crea una aplicación en [open.imoulife.com](https://open.imoulife.com) con la misma cuenta de
+Imou Life y copia su **App ID** y **App Secret** en `IMOU_APP_ID` e `IMOU_APP_SECRET`. En
+`IMOU_API_URL` usa el centro de datos de tu cuenta: `openapi-or` para América, `openapi-fk` para
+Europa u `openapi-sg` para Asia.
+
+En **Cámaras** registra `imou://<número de serie>/<canal>?stream=1`. El número de serie está en la
+etiqueta y en Imou Life. Para una cámara de dos lentes, registra una cámara por canal (`0` y `1`).
+`stream=1` es la calidad ligera, suficiente para Gemini; `stream=0` es la alta. El video llega por
+internet con unos segundos de retraso y consume la cuota de tu aplicación en Imou.
 
 ### Cámara que solo responde a otro equipo
 
@@ -87,6 +101,15 @@ El script descarga MediaMTX, pide la IP y el código de la cámara sin mostrarlo
 de solo lectura. Al terminar imprime dos URL, `rtsp://bandit:<clave>@<ip-del-puente>:8554/lente1` y
 `/lente2`. Regístralas en **Cámaras** como dos cámaras. El puente debe quedar encendido; si se
 apaga, Bandit marca la cámara como caída y reintenta.
+
+### Panel de actividad de la IA
+
+**Actividad IA** muestra, por cámara, el último fotograma que analizó Gemini, el nivel de
+movimiento, su última respuesta (situación, confianza, severidad y descripción) y cuántas
+detecciones seguidas lleva antes de alertar. También muestra las consultas del día frente al tope
+y la galería de los más buscados con el estado de la última extracción. El fotograma analizado solo
+vive en memoria. La extracción corre sola al arrancar si el directorio está vacío o es viejo, y un
+dueño puede pedir una manual cada 30 minutos.
 
 ## Arquitectura
 
