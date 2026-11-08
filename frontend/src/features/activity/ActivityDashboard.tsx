@@ -60,6 +60,12 @@ export function ActivityDashboard() {
         <p role="alert">No se pudo leer la actividad. Revisa que el servidor esté encendido.</p>
       )}
 
+      {current && !snapshot && !error && (
+        <p className={styles.detalle} role="status">
+          Cargando la actividad…
+        </p>
+      )}
+
       {snapshot && (
         <div className={styles.rejilla}>
           <section className={styles.seccion} aria-labelledby="titulo-camaras">
