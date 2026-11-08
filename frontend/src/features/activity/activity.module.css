@@ -1,0 +1,367 @@
+/* Panel de actividad: una consola de turno. El sodio marca lo que mira el modelo, la baliza lo que alerta. */
+
+.panel {
+  display: grid;
+  gap: var(--e-8);
+  width: min(100% - 2 * var(--e-6), 84rem);
+  margin: var(--e-6) auto var(--e-12);
+}
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--e-6);
+}
+
+.cabecera h1 {
+  font-size: var(--t-2xl);
+  font-stretch: 125%;
+  font-weight: 800;
+}
+
+.cabecera p {
+  max-width: 44rem;
+}
+
+.detalle {
+  color: var(--texto-tenue);
+  font-size: var(--t-sm);
+}
+
+.enlace {
+  color: var(--sodio);
+  font-weight: 700;
+}
+
+.resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-3);
+  margin: 0;
+}
+
+.resumen > div {
+  display: grid;
+  gap: var(--e-1);
+  min-width: 9rem;
+  padding: var(--e-3) var(--e-4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-panel);
+  background: color-mix(in srgb, var(--superficie) 70%, transparent);
+}
+
+.resumen dt {
+  color: var(--texto-tenue);
+  font-size: var(--t-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.resumen dd {
+  display: grid;
+  gap: var(--e-1);
+  margin: 0;
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+
+.resumen dd[data-activo="true"] {
+  color: var(--agua);
+}
+
+.resumen dd[data-activo="false"] {
+  color: var(--sodio);
+}
+
+.resumen meter,
+.medidor meter {
+  width: 100%;
+  height: 0.4rem;
+  accent-color: var(--sodio);
+}
+
+.rejilla {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  gap: var(--e-6);
+  align-items: start;
+}
+
+.seccion {
+  display: grid;
+  gap: var(--e-4);
+}
+
+.seccion h2 {
+  font-size: var(--t-lg);
+}
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--e-4);
+}
+
+.encabezado p {
+  max-width: 48rem;
+}
+
+/* Tarjeta de cámara */
+
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  gap: var(--e-4);
+}
+
+.tarjeta {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-panel);
+  background: var(--superficie);
+}
+
+.cuadro {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  background: #070d22;
+}
+
+.cuadro img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cuadro p {
+  max-width: 18rem;
+  padding: var(--e-4);
+  color: var(--texto-tenue);
+  font-size: var(--t-sm);
+  text-align: center;
+}
+
+.estado {
+  position: absolute;
+  inset: var(--e-2) auto auto var(--e-2);
+  padding: var(--e-1) var(--e-3);
+  border-radius: var(--radio-control);
+  background: rgb(7 13 34 / 85%);
+  font-size: var(--t-xs);
+  font-weight: 700;
+}
+
+.cuerpo {
+  display: grid;
+  gap: var(--e-3);
+  padding: var(--e-4);
+}
+
+.cuerpo h3 {
+  font-size: var(--t-lg);
+}
+
+.medidor {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--e-3);
+  font-size: var(--t-sm);
+}
+
+.respuesta {
+  display: grid;
+  gap: var(--e-1);
+  padding: var(--e-3);
+  border-left: 3px solid var(--borde);
+  background: rgb(16 29 66 / 55%);
+}
+
+.situacion {
+  font-family: var(--fuente-titulo);
+  font-weight: 700;
+}
+
+.racha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2);
+  font-size: var(--t-sm);
+}
+
+.punto {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid var(--sodio);
+  border-radius: 50%;
+}
+
+.punto[data-lleno="true"] {
+  background: var(--sodio);
+}
+
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--e-2);
+  margin: 0;
+}
+
+.cifras dt {
+  color: var(--texto-tenue);
+  font-size: var(--t-xs);
+}
+
+.cifras dd {
+  margin: 0;
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+
+/* Tonos compartidos */
+
+[data-tono="alerta"] {
+  border-color: var(--baliza);
+  color: var(--texto);
+}
+
+.estado[data-tono="alerta"] {
+  background: var(--baliza);
+  color: var(--noche);
+}
+
+[data-tono="observacion"] {
+  border-color: var(--sodio);
+}
+
+.estado[data-tono="observacion"] {
+  color: var(--sodio);
+}
+
+[data-tono="calma"] {
+  border-color: var(--agua);
+}
+
+.estado[data-tono="calma"] {
+  color: var(--agua);
+}
+
+/* Línea de tiempo */
+
+.linea {
+  display: grid;
+  gap: var(--e-1);
+  max-height: 34rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.linea li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 var(--e-3);
+  padding: var(--e-2) var(--e-3);
+  border-left: 3px solid var(--borde);
+  background: color-mix(in srgb, var(--superficie) 55%, transparent);
+}
+
+.linea time {
+  grid-row: span 2;
+  color: var(--texto-tenue);
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.lineaCamara {
+  color: var(--texto-tenue);
+  font-size: var(--t-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lineaTitulo {
+  font-weight: 700;
+}
+
+.linea li .detalle {
+  grid-column: 2;
+}
+
+/* Galería del directorio */
+
+.galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: var(--e-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.galeria a {
+  display: grid;
+  gap: var(--e-1);
+  height: 100%;
+  padding: var(--e-2);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-panel);
+  background: var(--superficie);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 160ms var(--curva),
+    transform 160ms var(--curva);
+}
+
+.galeria a:hover {
+  border-color: var(--sodio);
+  transform: translateY(-2px);
+}
+
+.galeria img,
+.sinFoto {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: #070d22;
+}
+
+.sinFoto {
+  display: grid;
+  place-items: center;
+  color: var(--texto-tenue);
+  font-size: var(--t-sm);
+}
+
+.galeria strong {
+  font-size: var(--t-sm);
+  line-height: 1.25;
+}
+
+@media (max-width: 64rem) {
+  .rejilla {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .galeria a {
+    transition: none;
+  }
+
+  .galeria a:hover {
+    transform: none;
+  }
+}
