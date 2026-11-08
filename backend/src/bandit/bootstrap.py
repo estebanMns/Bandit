@@ -7,7 +7,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from bandit.analysis.domain.models import SituationDetected
+from bandit.analysis.domain.models import AnalysisActivity, SituationDetected
 from bandit.analysis.domain.ports import SceneAnalyzer
 from bandit.analysis.infrastructure.gemini_analyzer import (
     DisabledSceneAnalyzer,
@@ -105,6 +105,7 @@ def _wire_events(bus: EventBus, app: Application) -> None:
 
     bus.subscribe(CameraStatusChanged, app.analysis.supervisor.on_camera_status)
     bus.subscribe(CameraStatusChanged, live.on_camera_status)
+    bus.subscribe(AnalysisActivity, live.on_analysis_activity)
     bus.subscribe(SituationDetected, app.incidents.record_situation.execute_event)
     bus.subscribe(IncidentChanged, live.on_incident_changed)
     bus.subscribe(IncidentChanged, app.notifications.push_new_incident.execute)
