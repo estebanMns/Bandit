@@ -2,9 +2,17 @@ import { describe, expect, it } from "vitest";
 import { applyEntry, RECENT_LIMIT, timeline } from "./state";
 import type { ActivityEntry, ActivitySnapshot } from "./types";
 
-const EMPTY: ActivitySnapshot = { model_enabled: true, budget: { used: 0, limit: 10 }, cameras: [] };
+const EMPTY: ActivitySnapshot = {
+  model_enabled: true,
+  budget: { used: 0, limit: 10 },
+  cameras: [],
+};
 
-function entry(second: number, outcome: ActivityEntry["outcome"] = "analyzed", camera = "c1"): ActivityEntry {
+function entry(
+  second: number,
+  outcome: ActivityEntry["outcome"] = "analyzed",
+  camera = "c1",
+): ActivityEntry {
   return {
     camera_id: camera,
     at: `2026-11-08T22:00:${String(second).padStart(2, "0")}Z`,
@@ -22,9 +30,9 @@ describe("applyEntry", () => {
     const next = applyEntry(EMPTY, "Barra", entry(1));
 
     expect(next.cameras).toHaveLength(1);
-    expect(next.cameras[0].camera_name).toBe("Barra");
-    expect(next.cameras[0].counts.analyzed).toBe(1);
-    expect(next.cameras[0].has_frame).toBe(true);
+    expect(next.cameras[0]!.camera_name).toBe("Barra");
+    expect(next.cameras[0]!.counts.analyzed).toBe(1);
+    expect(next.cameras[0]!.has_frame).toBe(true);
   });
 
   it("solo descuenta del presupuesto lo que consultó al modelo", () => {
@@ -40,7 +48,7 @@ describe("applyEntry", () => {
     let state = applyEntry(EMPTY, "Barra", entry(1));
     state = applyEntry(state, "Barra", entry(2, "no_motion"));
 
-    expect(state.cameras[0].last_frame_at).toBe(entry(1).at);
+    expect(state.cameras[0]!.last_frame_at).toBe(entry(1).at);
   });
 
   it("ignora mensajes repetidos o atrasados", () => {
@@ -53,10 +61,13 @@ describe("applyEntry", () => {
   it("guarda solo lo reciente", () => {
     let state = EMPTY;
     for (let second = 0; second < RECENT_LIMIT + 5; second += 1) {
-      state = applyEntry(state, "Barra", { ...entry(0), at: new Date(Date.UTC(2026, 10, 8, 22, 0, second)).toISOString() });
+      state = applyEntry(state, "Barra", {
+        ...entry(0),
+        at: new Date(Date.UTC(2026, 10, 8, 22, 0, second)).toISOString(),
+      });
     }
 
-    expect(state.cameras[0].recent).toHaveLength(RECENT_LIMIT);
+    expect(state.cameras[0]!.recent).toHaveLength(RECENT_LIMIT);
   });
 });
 
