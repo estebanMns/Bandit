@@ -37,3 +37,8 @@ Thumbs.db
 .idea/
 .vscode/
 next-env.d.ts
+
+# Puente RTSP: contiene el código de la cámara
+relay/mediamtx.yml
+relay/mediamtx
+relay/*.tar.gz
