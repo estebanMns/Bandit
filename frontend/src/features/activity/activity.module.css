@@ -228,11 +228,21 @@
   font-weight: 700;
 }
 
-/* Tonos compartidos */
+/* Tonos: baliza si alertó, sodio si hay algo que mirar, agua si la escena está tranquila. */
 
-[data-tono="alerta"] {
+.respuesta[data-tono="alerta"],
+.linea li[data-tono="alerta"] {
   border-color: var(--baliza);
-  color: var(--texto);
+}
+
+.respuesta[data-tono="observacion"],
+.linea li[data-tono="observacion"] {
+  border-color: var(--sodio);
+}
+
+.respuesta[data-tono="calma"],
+.linea li[data-tono="calma"] {
+  border-color: var(--agua);
 }
 
 .estado[data-tono="alerta"] {
@@ -240,16 +250,8 @@
   color: var(--noche);
 }
 
-[data-tono="observacion"] {
-  border-color: var(--sodio);
-}
-
 .estado[data-tono="observacion"] {
   color: var(--sodio);
-}
-
-[data-tono="calma"] {
-  border-color: var(--agua);
 }
 
 .estado[data-tono="calma"] {
