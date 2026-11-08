@@ -1,0 +1,35 @@
+# Plantilla del puente RTSP. iniciar-puente.sh genera mediamtx.yml con los valores reales.
+# Nunca subas mediamtx.yml: contiene el código de la cámara.
+
+logLevel: info
+
+# Solo RTSP sobre TCP. El resto de protocolos queda apagado.
+rtsp: yes
+rtspTransports: [tcp]
+rtspAddress: :8554
+rtmp: no
+hls: no
+webrtc: no
+srt: no
+api: no
+metrics: no
+pprof: no
+playback: no
+
+# Un único usuario que solo puede leer los dos lentes.
+authMethod: internal
+authInternalUsers:
+  - user: bandit
+    pass: '<CLAVE_DEL_PUENTE>'
+    ips: []
+    permissions:
+      - action: read
+        path: '~^lente[12]$'
+
+paths:
+  lente1:
+    source: 'rtsp://admin:<CODIGO_CODIFICADO>@<IP_CAMARA>:554/cam/realmonitor?channel=1&subtype=1'
+    rtspTransport: tcp
+  lente2:
+    source: 'rtsp://admin:<CODIGO_CODIFICADO>@<IP_CAMARA>:554/cam/realmonitor?channel=2&subtype=1'
+    rtspTransport: tcp
