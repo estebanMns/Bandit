@@ -73,6 +73,21 @@ Mensaje confirmado por el personal del local.
 
 Acuerda con el CAI el uso de su número antes de registrarlo.
 
+### Cámara que solo responde a otro equipo
+
+Algunas cámaras Imou o Dahua dejan de contestarle a un equipo concreto. Si la cámara responde
+desde otro equipo de la misma red, como una máquina virtual en modo puente, usa ese equipo como
+puente:
+
+```bash
+bash relay/iniciar-puente.sh
+```
+
+El script descarga MediaMTX, pide la IP y el código de la cámara sin mostrarlos y genera una clave
+de solo lectura. Al terminar imprime dos URL, `rtsp://bandit:<clave>@<ip-del-puente>:8554/lente1` y
+`/lente2`. Regístralas en **Cámaras** como dos cámaras. El puente debe quedar encendido; si se
+apaga, Bandit marca la cámara como caída y reintenta.
+
 ## Arquitectura
 
 Monolito modular: un solo backend desplegable, con módulos de fronteras verificadas.
