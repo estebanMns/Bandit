@@ -86,6 +86,13 @@ test("una persona nueva se registra, sale y vuelve a entrar", async ({ page }) =
 
   await page.getByLabel("Repite la clave").fill(password);
   await page.getByRole("button", { name: "Crear cuenta" }).click();
+  await expect(page.getByText("Registro exitoso")).toBeVisible();
+  await shot(page, "registro-exitoso");
+  await page.waitForURL("**/ingresar?registro=exitoso");
+  await expect(page.getByText("Cuenta creada.")).toBeVisible();
+  await expect(page.getByLabel("Correo o usuario")).toHaveValue(email);
+  await page.getByLabel("Clave").fill(password);
+  await page.getByRole("button", { name: "Ingresar" }).click();
   await page.waitForURL("**/empezar");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Deja Bandit listo para tu turno");
   await expect(page.getByRole("heading", { name: "WhatsApp del CAI más cercano" })).toBeVisible();
