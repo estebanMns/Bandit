@@ -10,7 +10,7 @@ import { createCamera, listCameras, type Camera } from "@/features/cameras/api";
 import { CameraFinder } from "@/features/cameras/CameraFinder";
 import { createEstablishment, setCaiWhatsApp } from "@/features/establishments/api";
 import { useEstablishment } from "@/features/establishments/useEstablishment";
-import { firstPending, LATER_KEY, steps, type StepId } from "@/features/onboarding/setup";
+import { firstPending, steps, type StepId } from "@/features/onboarding/setup";
 import { ApiError } from "@/lib/api";
 import styles from "./empezar.module.css";
 
@@ -81,8 +81,7 @@ export default function StartPage() {
   }
 
   function later() {
-    sessionStorage.setItem(LATER_KEY, "1");
-    router.push("/monitor");
+    router.push("/panel");
   }
 
   return (
@@ -92,7 +91,7 @@ export default function StartPage() {
           <p className={styles.eyebrow}>Primeros pasos</p>
           <h1>Deja Bandit listo para tu turno</h1>
           <p className={styles.bajada}>
-            Cuatro pasos y empiezas a vigilar. Puedes volver aquí cuando quieras desde el Monitor.
+            Cuatro pasos y empiezas a vigilar. Puedes volver aquí cuando quieras desde el Panel.
           </p>
         </header>
 
@@ -226,8 +225,8 @@ export default function StartPage() {
                     : "Te falta al menos una cámara. Puedes agregarla ahora o más tarde."}
                 </p>
                 <div className={styles.acciones}>
-                  <Link href="/monitor" className={styles.botonEnlace}>
-                    Ir al Monitor
+                  <Link href="/panel" className={styles.botonEnlace}>
+                    Ir al Panel
                   </Link>
                   <Link href="/actividad" className={styles.enlace}>
                     Ver qué hace la IA
