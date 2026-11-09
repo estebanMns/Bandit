@@ -77,7 +77,13 @@ export function connectDevice(
 }
 
 /** La URL se arma en el navegador: la clave nunca vuelve del servidor. */
-export function streamUrl(ip: string, port: number, path: string, username: string, password: string) {
+export function streamUrl(
+  ip: string,
+  port: number,
+  path: string,
+  username: string,
+  password: string,
+) {
   const credentials = `${encodeURIComponent(username)}:${encodeURIComponent(password)}`;
   return `rtsp://${credentials}@${ip}:${port}${path}`;
 }
