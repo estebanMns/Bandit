@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import JSON, String
+from sqlalchemy import JSON, BigInteger, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from bandit.shared.db import Base, UtcDateTime
@@ -27,6 +27,8 @@ class WantedRow(Base):
     first_seen_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     last_seen_at: Mapped[datetime | None] = mapped_column(UtcDateTime)
     active: Mapped[bool] = mapped_column(index=True)
+    reward_amount: Mapped[int | None] = mapped_column(BigInteger)
+    listing_position: Mapped[int | None]
 
 
 class SyncRunRow(Base):
@@ -41,3 +43,4 @@ class SyncRunRow(Base):
     retired: Mapped[int]
     completed: Mapped[bool]
     error: Mapped[str | None] = mapped_column(String(300))
+    pages_failed: Mapped[int] = mapped_column(default=0)
