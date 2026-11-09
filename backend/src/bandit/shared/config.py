@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     cookie_secure: bool = False
     bootstrap_admin_email: str = ""
     bootstrap_admin_password: str = ""
+    # Solo para pruebas: crea la cuenta admin/admin. Apágalo en un local real.
+    demo_admin: bool = False
 
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.8-flash"
