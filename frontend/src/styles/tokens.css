@@ -62,3 +62,17 @@
   /* La baliza no alcanza contraste AA sobre papel claro. */
   --error: #b3123a;
 }
+
+/* Vuelve a la noche dentro de una página clara, por ejemplo la demo del turno en la portada. */
+[data-tema="noche"] {
+  --fondo: var(--noche);
+  --superficie: var(--asfalto);
+  --borde: var(--asfalto-claro);
+  --texto: var(--hielo);
+  --texto-tenue: var(--hielo-tenue);
+  --accion: var(--sodio);
+  --sobre-accion: var(--noche);
+  --foco: var(--agua);
+  --campo-fondo: color-mix(in srgb, var(--noche) 70%, black);
+  --error: var(--baliza);
+}
