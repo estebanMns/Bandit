@@ -475,3 +475,14 @@ def test_open_registration_still_requires_long_passwords(tmp_path: Path) -> None
             },
         )
         assert response.status_code == 422
+
+
+def test_logout_ends_the_session_at_once(client: TestClient) -> None:
+    headers = register(client, "salida@example.com")
+    assert client.get("/api/auth/me").status_code == 200
+    token = client.cookies.get("bandit_session")
+
+    assert client.post("/api/auth/logout", headers=headers).status_code in (200, 204)
+
+    client.cookies.set("bandit_session", token)
+    assert client.get("/api/auth/me").status_code == 401
