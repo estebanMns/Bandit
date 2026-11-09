@@ -21,6 +21,8 @@ _COPIED_FIELDS = (
     "first_seen_at",
     "last_seen_at",
     "active",
+    "reward_amount",
+    "listing_position",
 )
 
 
@@ -64,6 +66,7 @@ _RUN_FIELDS = (
     "retired",
     "completed",
     "error",
+    "pages_failed",
 )
 
 
