@@ -23,7 +23,7 @@ async function login(page: Page) {
   await page.getByLabel("Correo o usuario").fill(ADMIN_EMAIL);
   await page.getByLabel("Clave").fill(ADMIN_PASSWORD);
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await page.waitForURL("**/monitor");
+  await page.waitForURL("**/panel");
 }
 
 /** Devuelve cuántos píxeles distintos hay en una muestra del lienzo. */
@@ -86,8 +86,19 @@ test("una persona nueva se registra, sale y vuelve a entrar", async ({ page }) =
 
   await page.getByLabel("Repite la clave").fill(password);
   await page.getByRole("button", { name: "Crear cuenta" }).click();
-  await page.waitForURL("**/monitor");
-  await expect(page.getByRole("heading", { name: "Conecta tu primera cámara" })).toBeVisible();
+  await expect(page.getByText("Registro exitoso")).toBeVisible();
+  await shot(page, "registro-exitoso");
+  await page.waitForURL("**/ingresar?registro=exitoso");
+  await expect(page.getByText("Cuenta creada.")).toBeVisible();
+  await expect(page.getByLabel("Correo o usuario")).toHaveValue(email);
+  await page.getByLabel("Clave").fill(password);
+  await page.getByRole("button", { name: "Ingresar" }).click();
+  await page.waitForURL("**/panel");
+  await expect(page.getByRole("heading", { name: "Te falta configurar" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Conectar mi cámara automáticamente" })).toBeVisible();
+  await shot(page, "panel");
+  await page.getByRole("link", { name: "Completar" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Deja Bandit listo para tu turno");
 
   await page.goto("/ajustes/local");
   await expect(page.getByRole("heading", { name: "Restaurante de prueba" })).toBeVisible();
@@ -100,8 +111,8 @@ test("una persona nueva se registra, sale y vuelve a entrar", async ({ page }) =
   await page.getByLabel("Correo o usuario").fill(email);
   await page.getByLabel("Clave").fill(password);
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await page.waitForURL("**/monitor");
-  await expect(page.getByRole("heading", { name: "Conecta tu primera cámara" })).toBeVisible();
+  // Después de ingresar siempre se llega al Panel, sin redirecciones intermedias.
+  await page.waitForURL("**/panel");
 
   await page.getByRole("button", { name: "Salir" }).click();
   await page.waitForURL("**/ingresar");
@@ -248,5 +259,5 @@ test("la cuenta de prueba admin/admin entra cuando DEMO_ADMIN está activo", asy
   await page.getByRole("button", { name: "Mostrar" }).click();
   await expect(page.getByLabel("Clave")).toHaveAttribute("type", "text");
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await page.waitForURL("**/monitor");
+  await page.waitForURL("**/panel");
 });

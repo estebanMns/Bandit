@@ -33,6 +33,7 @@ async def get_activity(
     _ensure_access(user, establishment_id)
     return ActivityResponse(
         model_enabled=module.model_enabled,
+        model=getattr(module.analyzer, "active_model", None),
         budget=BudgetResponse(used=module.budget.used, limit=module.budget.limit),
         cameras=[
             CameraActivityResponse.of(activity)

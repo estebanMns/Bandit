@@ -23,7 +23,8 @@ export function MonitorClient() {
     if (!current) return;
     let active = true;
     listCameras(current.id).then((loaded) => {
-      if (active) setCameras(loaded.filter((camera) => camera.enabled));
+      if (!active) return;
+      setCameras(loaded.filter((camera) => camera.enabled));
     });
     return () => {
       active = false;
@@ -46,8 +47,8 @@ export function MonitorClient() {
         {!loading && !featured && (
           <div className={styles.vacio}>
             <h1>Conecta tu primera cámara</h1>
-            <p>Agrega la dirección RTSP y aquí verás el video en vivo.</p>
-            <Link href="/ajustes/camaras">Agregar cámara</Link>
+            <p>Bandit puede buscar tu cámara y conectarla por la red o por la nube.</p>
+            <Link href="/panel">Conectarla desde el Panel</Link>
           </div>
         )}
         {featured && (

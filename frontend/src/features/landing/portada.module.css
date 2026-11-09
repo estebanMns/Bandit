@@ -1,0 +1,484 @@
+/* Portada: papel claro con cuadrícula, una tarjeta nocturna con la cámara y cifras en tarjetas de color. */
+
+.portada {
+  min-height: 100dvh;
+  overflow-x: clip;
+  background-color: var(--fondo);
+  background-image:
+    radial-gradient(60rem 40rem at 0% 0%, rgb(255 176 0 / 22%), transparent 70%),
+    radial-gradient(50rem 40rem at 100% 100%, rgb(94 214 208 / 28%), transparent 70%),
+    linear-gradient(rgb(16 29 66 / 4%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(16 29 66 / 4%) 1px, transparent 1px);
+  background-size:
+    auto,
+    auto,
+    2.5rem 2.5rem,
+    2.5rem 2.5rem;
+  color: var(--texto);
+}
+
+.contenedor {
+  width: min(100% - 2 * clamp(var(--e-4), 2.5vw, var(--e-8)), 90rem);
+  margin-inline: auto;
+}
+
+/* Barra */
+
+.barra {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--e-4);
+  padding-block: var(--e-4);
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-2);
+  justify-self: start;
+  color: var(--noche);
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-xl);
+  font-stretch: 125%;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.marcaIcono {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.6rem;
+  background: var(--noche);
+  color: var(--sodio);
+}
+
+.nav {
+  display: flex;
+  gap: var(--e-8);
+}
+
+.nav a {
+  color: var(--texto);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.nav a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
+.ingresar {
+  justify-self: end;
+  padding: var(--e-3) var(--e-6);
+  border-radius: 0.75rem;
+  background: var(--sodio);
+  color: var(--noche);
+  font-family: var(--fuente-titulo);
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 160ms var(--curva);
+}
+
+.ingresar:hover {
+  transform: translateY(-1px);
+}
+
+/* Tarjeta principal */
+
+.heroe {
+  position: relative;
+  display: grid;
+  align-content: center;
+  min-height: min(44rem, 82dvh);
+  padding: clamp(var(--e-8), 6vw, var(--e-20)) clamp(var(--e-6), 5vw, var(--e-20));
+  padding-bottom: clamp(var(--e-12), 12vw, 13rem);
+  border-radius: 2rem;
+  background:
+    linear-gradient(
+      90deg,
+      rgb(10 18 44 / 94%) 0%,
+      rgb(10 18 44 / 78%) 42%,
+      rgb(10 18 44 / 15%) 75%
+    ),
+    url("/portada/heroe.webp") right center / cover no-repeat,
+    var(--noche);
+  color: var(--hielo);
+}
+
+.heroeContenido {
+  display: grid;
+  gap: var(--e-6);
+  max-width: 44rem;
+}
+
+.eyebrow {
+  color: var(--sodio);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.titular {
+  font-family: var(--fuente-titulo);
+  font-size: clamp(2.8rem, 6.5vw, 5.6rem);
+  font-stretch: 112%;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+.bajada {
+  max-width: 40rem;
+  color: var(--hielo-tenue);
+  font-size: var(--t-lg);
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-3);
+}
+
+.botonPrincipal,
+.botonContorno {
+  display: inline-flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: var(--e-3) var(--e-8);
+  border-radius: 0.75rem;
+  font-family: var(--fuente-titulo);
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    transform 160ms var(--curva),
+    background-color 160ms var(--curva);
+}
+
+.botonPrincipal {
+  background: var(--sodio);
+  color: var(--noche);
+}
+
+.botonContorno {
+  border: 1px solid rgb(232 236 244 / 55%);
+  color: var(--hielo);
+}
+
+.botonPrincipal:hover,
+.botonContorno:hover {
+  transform: translateY(-1px);
+}
+
+.botonContorno:hover {
+  background: rgb(232 236 244 / 10%);
+}
+
+/* Tarjeta "Más información", encajada en la esquina como en una muesca. */
+.masInfo {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  gap: var(--e-3);
+  width: min(30rem, 42%);
+  padding: var(--e-6);
+  border: 0.9rem solid var(--fondo);
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 2rem 0 2rem 0;
+  background: rgb(16 29 66 / 88%);
+  backdrop-filter: blur(8px);
+  color: var(--hielo);
+  text-decoration: none;
+}
+
+.masInfoCabecera {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--fuente-titulo);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.masInfoCuerpo {
+  display: flex;
+  align-items: center;
+  gap: var(--e-4);
+}
+
+.miniaturas {
+  display: flex;
+  flex: none;
+}
+
+.miniaturas img {
+  width: 3.6rem;
+  height: 3.6rem;
+  border: 3px solid var(--hielo);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.miniaturas img + img {
+  margin-left: -0.9rem;
+}
+
+.masInfoTitulo {
+  display: block;
+  font-family: var(--fuente-titulo);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.masInfoTexto {
+  color: var(--hielo-tenue);
+  font-size: var(--t-sm);
+}
+
+.masInfo:hover .masInfoCabecera span:last-child {
+  transform: translateX(3px);
+}
+
+.masInfoCabecera span:last-child {
+  transition: transform 160ms var(--curva);
+}
+
+/* Cifras */
+
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--e-4);
+  margin: var(--e-4) 0 0;
+}
+
+.cifra {
+  display: grid;
+  gap: var(--e-1);
+  padding: var(--e-6);
+  border-radius: 1.5rem;
+}
+
+.cifra dt {
+  order: 1;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cifra dd {
+  display: contents;
+}
+
+.cifraValor {
+  order: 2;
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-2xl);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.cifraNota {
+  order: 3;
+  font-size: var(--t-sm);
+}
+
+.cifraSodio {
+  background: linear-gradient(135deg, #fff3d4, #ffe2a8);
+  color: #6b3600;
+}
+
+.cifraNoche {
+  background: var(--noche);
+  color: var(--hielo);
+}
+
+.cifraBaliza {
+  background: linear-gradient(135deg, #c4183f, #8a0f2e);
+  color: #ffffff;
+}
+
+.cifraAgua {
+  background: linear-gradient(135deg, #e3f7f5, #c8ece8);
+  color: #0b4f4b;
+}
+
+/* Pasos */
+
+.seccion {
+  display: grid;
+  gap: var(--e-6);
+  padding-block: var(--e-12) 0;
+}
+
+.seccion h2 {
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-2xl);
+  font-weight: 700;
+}
+
+.pasos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paso {
+  display: grid;
+  align-content: start;
+  gap: var(--e-3);
+  padding: var(--e-6);
+  border: 1px solid var(--borde);
+  border-radius: 1.5rem;
+  background: rgb(255 255 255 / 70%);
+}
+
+.pasoIcono {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  background: var(--noche);
+  color: var(--sodio);
+}
+
+.pasoNumero {
+  color: #8a4500;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.paso h3 {
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+
+.paso p {
+  color: var(--texto-tenue);
+}
+
+/* Demo del turno y límites */
+
+.demo {
+  display: grid;
+  gap: var(--e-4);
+  padding: clamp(var(--e-6), 4vw, var(--e-12));
+  border-radius: 2rem;
+  background: var(--fondo);
+  color: var(--texto);
+}
+
+.limites {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.limites li {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  padding: var(--e-4) var(--e-6);
+  border: 1px solid var(--borde);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 70%);
+  font-weight: 700;
+}
+
+.limites svg {
+  flex: none;
+  color: var(--error);
+}
+
+.pie {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--e-3);
+  padding-block: var(--e-12) var(--e-8);
+  color: var(--texto-tenue);
+  font-size: var(--t-sm);
+}
+
+.pie a {
+  color: var(--texto);
+}
+
+@media (max-width: 64rem) {
+  .cifras {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pasos,
+  .limites {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 48rem) {
+  .barra {
+    grid-template-columns: 1fr auto;
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .heroe {
+    padding-bottom: var(--e-8);
+    border-radius: 1.5rem;
+    background:
+      linear-gradient(180deg, rgb(10 18 44 / 70%) 0%, rgb(10 18 44 / 94%) 60%),
+      url("/portada/heroe.webp") 70% center / cover no-repeat,
+      var(--noche);
+  }
+
+  .masInfo {
+    position: static;
+    width: auto;
+    margin-top: var(--e-6);
+    border: 1px solid rgb(232 236 244 / 25%);
+    border-radius: 1.25rem;
+  }
+
+  .masInfoCuerpo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cifras {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ingresar,
+  .botonPrincipal,
+  .botonContorno,
+  .masInfoCabecera span:last-child {
+    transition: none;
+  }
+
+  .ingresar:hover,
+  .botonPrincipal:hover,
+  .botonContorno:hover {
+    transform: none;
+  }
+}

@@ -9,6 +9,7 @@ from bandit.directory.application.use_cases import ListWanted, SyncDirectory
 from bandit.directory.domain.models import SyncRun, SyncTrigger
 from bandit.directory.domain.ports import SyncRunRepository
 from bandit.shared.clock import Clock
+from bandit.shared.error_summary import describe_error
 from bandit.shared.errors import ConflictError, RateLimitedError
 
 logger = logging.getLogger(__name__)
@@ -58,9 +59,11 @@ class DirectorySyncRunner:
                 report.retired,
             )
             run.completed = report.completed
+            run.pages_failed = report.pages_failed
+            run.error = report.error
         except Exception as error:
-            logger.warning("La extracción falló: %s", type(error).__name__)
-            run.error = type(error).__name__
+            run.error = describe_error(error)
+            logger.warning("La extracción falló: %s", run.error)
         finally:
             run.finished_at = self._clock.now()
             self._busy = False

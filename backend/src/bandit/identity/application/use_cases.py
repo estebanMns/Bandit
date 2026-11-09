@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from uuid import UUID, uuid4
 
+from bandit.identity.application.session_cache import SessionCache
 from bandit.identity.application.throttle import AttemptThrottle
 from bandit.identity.domain.models import Role, Session, User
 from bandit.identity.domain.ports import (
@@ -115,14 +116,16 @@ class SyncDemoAdmin:
     El registro exige un correo válido, así que "admin" nunca puede ser una cuenta real.
     """
 
-    def __init__(self, users: UserRepository, hasher: PasswordHasher) -> None:
+    def __init__(self, users: UserRepository, hasher: PasswordHasher, cache: SessionCache) -> None:
         self._users = users
         self._hasher = hasher
+        self._cache = cache
 
     async def execute(self, enabled: bool) -> None:
         existing = await self._users.get_by_email(DEMO_USERNAME)
         if not enabled:
             if existing is not None:
+                self._cache.forget_user(existing.id)
                 await self._users.delete(existing.id)
             return
         password_hash = self._hasher.hash(DEMO_PASSWORD)
@@ -138,6 +141,7 @@ class SyncDemoAdmin:
             )
         elif existing.role is not Role.ADMIN:
             # Con ese nombre solo puede existir la cuenta de prueba: se rehace como admin.
+            self._cache.forget_user(existing.id)
             await self._users.delete(existing.id)
             await self.execute(enabled)
         elif not self._hasher.verify(existing.password_hash, DEMO_PASSWORD):
@@ -183,28 +187,34 @@ class Login:
 
 
 class Logout:
-    def __init__(self, sessions: SessionRepository) -> None:
+    def __init__(self, sessions: SessionRepository, cache: SessionCache) -> None:
         self._sessions = sessions
+        self._cache = cache
 
     async def execute(self, token: str) -> None:
-        await self._sessions.delete(_hash_token(token))
+        token_hash = _hash_token(token)
+        self._cache.forget(token_hash)
+        await self._sessions.delete(token_hash)
 
 
 class AuthenticateSession:
-    def __init__(self, users: UserRepository, sessions: SessionRepository, clock: Clock) -> None:
-        self._users = users
+    def __init__(self, sessions: SessionRepository, clock: Clock, cache: SessionCache) -> None:
         self._sessions = sessions
         self._clock = clock
+        self._cache = cache
 
     async def execute(self, token: str) -> User:
         token_hash = _hash_token(token)
-        session = await self._sessions.get(token_hash)
-        if session is None:
+        now = self._clock.now()
+        cached = self._cache.get(token_hash, now)
+        if cached is not None:
+            return cached
+        found = await self._sessions.get_with_user(token_hash)
+        if found is None:
             raise AuthenticationError("Sesión no válida")
-        if session.is_expired(self._clock.now()):
+        session, user = found
+        if session.is_expired(now):
             await self._sessions.delete(token_hash)
             raise AuthenticationError("La sesión expiró")
-        user = await self._users.get(session.user_id)
-        if user is None:
-            raise AuthenticationError("Sesión no válida")
+        self._cache.put(token_hash, user, session.expires_at, now)
         return user

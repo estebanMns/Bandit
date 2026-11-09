@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 
+from bandit.identity.application.session_cache import SessionCache
 from bandit.identity.application.throttle import AttemptThrottle
 from bandit.identity.application.use_cases import (
     AuthenticateSession,
@@ -32,13 +33,14 @@ class IdentityModule:
         users = SqlUserRepository(sessions)
         session_repository = SqlSessionRepository(sessions)
         hasher = Argon2PasswordHasher()
+        cache = SessionCache()
 
         self.cookie_secure = cookie_secure
         self.demo_admin = demo_admin
         self.session_ttl = session_ttl
         self.register_user = RegisterUser(users, hasher)
         self.bootstrap_admin = BootstrapAdmin(users, self.register_user)
-        self.sync_demo_admin = SyncDemoAdmin(users, hasher)
+        self.sync_demo_admin = SyncDemoAdmin(users, hasher, cache)
         self.login = Login(users, session_repository, hasher, clock, session_ttl, AttemptThrottle())
         self.sign_up = SignUp(
             self.register_user,
@@ -46,5 +48,5 @@ class IdentityModule:
             AttemptThrottle(max_attempts=5, window=timedelta(hours=1)),
             clock,
         )
-        self.logout = Logout(session_repository)
-        self.authenticate = AuthenticateSession(users, session_repository, clock)
+        self.logout = Logout(session_repository, cache)
+        self.authenticate = AuthenticateSession(session_repository, clock, cache)

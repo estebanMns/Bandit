@@ -11,6 +11,7 @@ import {
   setCameraEnabled,
   type Camera,
 } from "@/features/cameras/api";
+import { CameraFinder } from "@/features/cameras/CameraFinder";
 import { useEstablishment } from "@/features/establishments/useEstablishment";
 import { ApiError } from "@/lib/api";
 import styles from "../ajustes.module.css";
@@ -54,7 +55,22 @@ export default function CamerasPage() {
 
         {current && (
           <section className={styles.seccion}>
-            <h2>Agregar cámara</h2>
+            <h2>Buscar cámaras en tu red</h2>
+            <p className={styles.ayuda}>
+              Bandit revisa los equipos de tu Wi-Fi, prueba las rutas de video conocidas de cada
+              marca y, si ninguna funciona, le pide a Gemini otras para probar. La clave nunca se
+              envía a la IA.
+            </p>
+            <CameraFinder
+              establishmentId={current.id}
+              onAdded={() => void listCameras(current.id).then(setCameras)}
+            />
+          </section>
+        )}
+
+        {current && (
+          <section className={styles.seccion}>
+            <h2>Agregar cámara a mano</h2>
             <form className={styles.formulario} onSubmit={add}>
               <Field label="Nombre" name="name" placeholder="Barra principal" required />
               <Field

@@ -1,0 +1,160 @@
+.pagina {
+  display: grid;
+  gap: var(--e-8);
+  width: min(100% - 2 * var(--e-6), 64rem);
+  margin: var(--e-8) auto var(--e-12);
+}
+
+.cabecera {
+  display: grid;
+  gap: var(--e-2);
+}
+
+.eyebrow {
+  color: var(--sodio);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.cabecera h1 {
+  font-size: var(--t-2xl);
+  font-stretch: 112%;
+  font-weight: 800;
+}
+
+.bajada,
+.ayuda {
+  color: var(--texto-tenue);
+}
+
+.cuerpo {
+  display: grid;
+  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+  gap: var(--e-6);
+  align-items: start;
+}
+
+.pasos ol {
+  display: grid;
+  gap: var(--e-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paso {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  width: 100%;
+  padding: var(--e-3) var(--e-4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-panel);
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.paso[aria-current="step"] {
+  border-color: var(--sodio);
+  background: var(--superficie);
+}
+
+.numero {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--borde);
+  border-radius: 50%;
+}
+
+.paso[data-hecho="true"] .numero {
+  border-color: var(--agua);
+  background: var(--agua);
+  color: var(--noche);
+}
+
+.estado {
+  display: block;
+  color: var(--texto-tenue);
+  font-size: var(--t-xs);
+  font-weight: 400;
+}
+
+.contenido {
+  display: grid;
+  gap: var(--e-4);
+  padding: var(--e-6);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-panel);
+  background: color-mix(in srgb, var(--superficie) 55%, transparent);
+}
+
+.contenido h2 {
+  font-size: var(--t-xl);
+}
+
+.formulario {
+  display: grid;
+  gap: var(--e-4);
+  justify-items: start;
+}
+
+.formulario > div {
+  width: 100%;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-3);
+}
+
+.manual summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.manual[open] summary {
+  margin-bottom: var(--e-4);
+}
+
+.botonEnlace {
+  padding: var(--e-2) var(--e-6);
+  border-radius: var(--radio-control);
+  background: var(--sodio);
+  color: var(--noche);
+  font-family: var(--fuente-titulo);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.enlace {
+  color: var(--sodio);
+  font-weight: 700;
+}
+
+.despues {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--texto-tenue);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (max-width: 48rem) {
+  .cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -5,6 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { PasswordField } from "@/components/ui/PasswordField";
+import { REGISTERED_EMAIL_KEY } from "@/features/onboarding/signup";
 import { api, ApiError } from "@/lib/api";
 import styles from "./page.module.css";
 
@@ -13,6 +14,17 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [demo, setDemo] = useState(false);
+  const [justRegistered, setJustRegistered] = useState(false);
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    // Se lee en el cliente para que /ingresar siga siendo una página estática.
+    if (new URLSearchParams(window.location.search).get("registro") !== "exitoso") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setJustRegistered(true);
+    setEmail(sessionStorage.getItem(REGISTERED_EMAIL_KEY) ?? "");
+    sessionStorage.removeItem(REGISTERED_EMAIL_KEY);
+  }, []);
 
   useEffect(() => {
     api<{ demo: boolean }>("/api/auth/options")
@@ -30,7 +42,7 @@ export function LoginForm() {
         method: "POST",
         body: JSON.stringify({ email: data.get("email"), password: data.get("password") }),
       });
-      router.push("/monitor");
+      router.push("/panel");
     } catch (failure) {
       setError(failure instanceof ApiError ? failure.message : "No hay conexión con el servidor.");
       setPending(false);
@@ -39,6 +51,11 @@ export function LoginForm() {
 
   return (
     <form className={styles.formulario} onSubmit={submit}>
+      {justRegistered && (
+        <p className={styles.exitoAviso} role="status">
+          <strong>Cuenta creada.</strong> Ingresa para empezar a configurar tu local.
+        </p>
+      )}
       {demo && (
         <p className={styles.aviso} role="note">
           <strong>Modo de prueba:</strong> usuario <code>admin</code>, clave <code>admin</code>.
@@ -51,6 +68,8 @@ export function LoginForm() {
         autoCapitalize="none"
         spellCheck={false}
         placeholder="nombre@milocal.com"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
         required
       />
       <PasswordField

@@ -8,7 +8,14 @@ from urllib.parse import unquote, urlsplit
 from uuid import uuid4
 
 from bandit.directory.application.tools import SOURCE_URL, ScrapingTools
-from bandit.directory.domain.models import ExtractedRecord, SyncReport, WantedRecord, slugify
+from bandit.directory.domain.models import (
+    ExtractedRecord,
+    SyncReport,
+    WantedRecord,
+    parse_reward,
+    priority_key,
+    slugify,
+)
 from bandit.directory.domain.ports import (
     DirectoryAgent,
     MediaStore,
@@ -31,7 +38,8 @@ class ListWanted:
         self._records = records
 
     async def execute(self) -> list[WantedRecord]:
-        return await self._records.list_active()
+        """Primero la recompensa más alta, luego el delito más grave publicado."""
+        return sorted(await self._records.list_active(), key=priority_key)
 
 
 class GetWanted:
@@ -67,10 +75,10 @@ class SyncDirectory:
     async def execute(self) -> SyncReport:
         tools = ScrapingTools(self._fetcher, self._read_pdf_text)
         await self._agent.run(tools)
-        # Una corrida incompleta no retira a nadie: faltarían datos para decidirlo.
-        if not tools.finished or not tools.accepted:
-            logger.warning("La extracción no terminó; el directorio queda como estaba")
-            return SyncReport(0, tools.rejected, 0, completed=False)
+        complete = tools.finished and tools.failed_pages == 0
+        if not tools.accepted:
+            logger.warning("La extracción no aceptó registros; el directorio queda como estaba")
+            return SyncReport(0, tools.rejected, 0, False, tools.failed_pages, tools.last_error)
 
         current = {record.slug: record for record in await self._records.list_active()}
         published: set[str] = set()
@@ -78,14 +86,18 @@ class SyncDirectory:
             record = await self._publish(extracted, current)
             published.add(record.slug)
 
+        # Lo aceptado se publica siempre; solo una corrida completa retira a quien ya no está.
         retired = 0
-        for slug, record in current.items():
-            if slug not in published:
-                await self._retire(record)
-                retired += 1
+        if complete:
+            for slug, record in current.items():
+                if slug not in published:
+                    await self._retire(record)
+                    retired += 1
 
         await self._revalidator.revalidate()
-        return SyncReport(len(published), tools.rejected, retired, completed=True)
+        return SyncReport(
+            len(published), tools.rejected, retired, complete, tools.failed_pages, tools.last_error
+        )
 
     async def _publish(
         self, extracted: ExtractedRecord, current: dict[str, WantedRecord]
@@ -108,6 +120,8 @@ class SyncDirectory:
             source_url=SOURCE_URL,
             first_seen_at=existing.first_seen_at if existing else now,
             last_seen_at=now,
+            reward_amount=parse_reward(extracted.reward),
+            listing_position=extracted.listing_position,
         )
         record.photo_file = await self._download(
             slug, extracted.photo_url, _MAX_PHOTO_BYTES, record.photo_file, photo=True

@@ -1,5 +1,7 @@
 .pagina {
   display: grid;
+  /* La columna no crece con su contenido: evita que las fichas se salgan de la página. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--e-6);
   width: min(100% - 2 * var(--e-6), 72rem);
   margin: var(--e-8) auto var(--e-12);
@@ -29,18 +31,28 @@
 
 .filtros {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  /* minmax(0, …): una opción de delito muy larga no debe ensanchar la página. */
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--e-3);
 }
 
 .filtros label {
   display: grid;
   gap: var(--e-1);
+  min-width: 0;
   font-weight: 700;
+}
+
+@media (max-width: 40rem) {
+  .filtros {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .filtros input,
 .filtros select {
+  width: 100%;
+  min-width: 0;
   min-height: 44px;
   padding: var(--e-2);
   border: 2px solid var(--borde);
@@ -133,4 +145,69 @@
   .detalle {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Prioridad: los de mayor recompensa publicada, como un tablero de turno. */
+
+.prioridad {
+  display: grid;
+  gap: var(--e-3);
+  margin-bottom: var(--e-8);
+}
+
+.prioridad h2 {
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-xl);
+}
+
+.prioritarios {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: var(--e-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prioritario {
+  position: relative;
+  display: grid;
+  gap: var(--e-1);
+  height: 100%;
+  padding: var(--e-3);
+  border: 2px solid var(--borde);
+  border-radius: var(--radio-panel);
+  background: var(--superficie);
+  color: inherit;
+  text-decoration: none;
+}
+
+.prioritario:hover {
+  border-color: var(--texto);
+}
+
+.puesto {
+  position: absolute;
+  inset: var(--e-2) auto auto var(--e-2);
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--noche);
+  color: var(--sodio);
+  font-family: var(--fuente-titulo);
+  font-weight: 800;
+}
+
+.fotoPrioridad {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.recompensa {
+  font-family: var(--fuente-titulo);
+  font-size: var(--t-lg);
+  font-weight: 800;
 }

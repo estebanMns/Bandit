@@ -134,3 +134,37 @@ async def test_a_republished_person_becomes_visible_again(sessions, clock, media
 def test_media_store_rejects_path_traversal(media):
     assert media.path_of("../secreto.txt") is None
     assert media.path_of("..\\secreto.txt") is None
+
+
+class PartialTools:
+    """Agente que extrae una persona pero reporta que otra página falló."""
+
+    def __init__(self, names):
+        self.names = names
+
+    async def run(self, tools):
+        await tools.open_listing_page(0)
+        for name in self.names:
+            tools.submit_record(
+                ExtractedRecord(name, None, None, "10 millones", None, None, (), PHOTO, None, 3)
+            )
+        tools.record_page_failure("página 1: ServerError 503 UNAVAILABLE")
+        tools.finish()
+
+
+async def test_partial_run_publishes_but_never_retires(sessions, clock, media, revalidator):
+    await build(sessions, clock, media, revalidator, ["Ana Ejemplo", "Beto Ejemplo"]).sync.execute()
+    module = build(sessions, clock, media, revalidator, [], published=["Ana Ejemplo"])
+    module.sync._agent = PartialTools(["Ana Ejemplo"])
+    module.sync._fetcher = FakeFetcher(
+        f'<main><h3>Ana Ejemplo</h3> Recompensa: 10 millones <img src="{PHOTO}"></main>'
+    )
+
+    report = await module.sync.execute()
+
+    assert (report.published, report.retired, report.completed) == (1, 0, False)
+    assert report.pages_failed == 1 and "503" in (report.error or "")
+    names = [record.name for record in await module.list_active.execute()]
+    assert sorted(names) == ["Ana Ejemplo", "Beto Ejemplo"]
+    ana = await module.get.execute("ana-ejemplo")
+    assert (ana.reward_amount, ana.listing_position) == (10_000_000, 3)

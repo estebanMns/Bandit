@@ -16,6 +16,8 @@ function record(name: string, changes: Partial<WantedRecord> = {}): WantedRecord
     flyer_url: null,
     source_url: "",
     last_seen_at: null,
+    reward_amount: null,
+    crime_level: null,
     ...changes,
   };
 }

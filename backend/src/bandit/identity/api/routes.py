@@ -98,15 +98,12 @@ async def login(body: LoginRequest, response: Response, module: Module) -> UserR
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register(
-    body: RegisterRequest, request: Request, response: Response, module: Module
-) -> UserResponse:
-    await module.sign_up.execute(
+async def register(body: RegisterRequest, request: Request, module: Module) -> UserResponse:
+    """Crea la cuenta y su local. No abre sesión: la persona ingresa después con su clave."""
+    user = await module.sign_up.execute(
         body.email, body.password, body.local_name, body.local_address, _client_key(request)
     )
-    issued = await module.login.execute(body.email, body.password)
-    _set_session_cookies(response, module, issued.token)
-    return UserResponse.of(issued.user)
+    return UserResponse.of(user)
 
 
 @router.post(

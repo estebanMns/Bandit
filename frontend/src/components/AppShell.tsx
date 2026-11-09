@@ -7,6 +7,7 @@ import { LogoutButton } from "./LogoutButton";
 import styles from "./AppShell.module.css";
 
 const LINKS = [
+  { href: "/panel", label: "Panel" },
   { href: "/monitor", label: "Monitor" },
   { href: "/actividad", label: "Actividad IA" },
   { href: "/incidentes", label: "Incidentes" },
@@ -21,7 +22,7 @@ export function AppShell({ children, aside }: { children: ReactNode; aside?: Rea
   return (
     <div className={styles.marco}>
       <header className={styles.cabecera}>
-        <Link href="/monitor" className={styles.marca}>
+        <Link href="/panel" className={styles.marca}>
           Bandit
         </Link>
         <nav aria-label="Principal" className={styles.nav}>
