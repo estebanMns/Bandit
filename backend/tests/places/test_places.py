@@ -90,3 +90,78 @@ async def test_tiles_are_downloaded_once_and_then_served_from_disk(tmp_path):
     assert len(calls) == 1
     with pytest.raises(NotFoundError):
         await get.execute(13, 2390, 3960)
+
+
+NOMINATIM = [
+    {
+        "osm_id": 1,
+        "category": "amenity",
+        "type": "police",
+        "name": "CAI Anganoy",
+        "lat": "1.2150",
+        "lon": "-77.2820",
+    },
+    {
+        "osm_id": 1,
+        "category": "amenity",
+        "type": "police",
+        "name": "CAI Anganoy",
+        "lat": "1.2150",
+        "lon": "-77.2820",
+    },
+    {
+        "osm_id": 2,
+        "category": "leisure",
+        "type": "park",
+        "name": "Parque CAI",
+        "lat": "1.2140",
+        "lon": "-77.2810",
+    },
+    {
+        "osm_id": 3,
+        "category": "amenity",
+        "type": "police",
+        "name": "Lejos",
+        "lat": "1.40",
+        "lon": "-77.20",
+    },
+]
+
+
+def test_nominatim_results_keep_only_nearby_police_without_duplicates():
+    from bandit.places.infrastructure.nominatim_police import police_places
+
+    places = police_places(NOMINATIM, LAT, LNG, 5000)
+
+    assert [p.name for p in places] == ["CAI Anganoy"]
+
+
+async def test_nominatim_police_queries_inside_a_box():
+    from bandit.places.infrastructure.nominatim_police import NominatimPoliceStations
+
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url.params)
+        return httpx.Response(200, json=NOMINATIM)
+
+    stations = NominatimPoliceStations("Bandit/test", transport=httpx.MockTransport(handler))
+
+    places = await stations.around(LAT, LNG, 5000)
+
+    assert [p.name for p in places] == ["CAI Anganoy"]
+    assert all(params["bounded"] == "1" and params["viewbox"] for params in seen)
+
+
+class Broken:
+    async def around(self, latitude, longitude, radius_m):
+        raise httpx.ReadTimeout("lento")
+
+
+async def test_uses_the_next_source_and_fails_clearly_when_none_answers():
+    from bandit.places.infrastructure.fallback import FirstAvailableStations
+    from bandit.shared.errors import UnavailableError
+
+    assert await FirstAvailableStations([Broken(), CountingStations()]).around(LAT, LNG, 5000)
+    with pytest.raises(UnavailableError):
+        await FirstAvailableStations([Broken(), Broken()]).around(LAT, LNG, 5000)
