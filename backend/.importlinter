@@ -35,9 +35,22 @@ containers =
     bandit.directory
     bandit.notifications
     bandit.realtime
+    bandit.places
 layers =
     (api)
     (infrastructure)
     (application)
     (domain)
 exhaustive = false
+
+# Los lugares solo usan OpenStreetMap: no conocen el video ni a las personas del directorio.
+[importlinter:contract:lugares-aislados]
+name = Los lugares no conocen el video ni el directorio
+type = forbidden
+source_modules =
+    bandit.places
+forbidden_modules =
+    bandit.analysis
+    bandit.cameras
+    bandit.incidents
+    bandit.directory
