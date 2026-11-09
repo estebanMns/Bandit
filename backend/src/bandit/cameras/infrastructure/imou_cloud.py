@@ -40,6 +40,67 @@ class ImouTarget:
         return cls(parts.netloc, parts.path.strip("/"), int(stream))
 
 
+_PAGE_SIZE = 50
+_MAX_PAGES = 5
+_ONLINE = {"online", "1", "true"}
+
+
+@dataclass(frozen=True, slots=True)
+class ImouCamera:
+    """Un canal (lente) de una cámara de la cuenta de Imou."""
+
+    device_id: str
+    device_name: str
+    channel_id: str
+    channel_name: str
+    online: bool
+
+    @property
+    def url(self) -> str:
+        return f"imou://{self.device_id}/{self.channel_id}?stream=1"
+
+
+def _text(item: dict[str, object], *keys: str) -> str:
+    for key in keys:
+        value = item.get(key)
+        if value not in (None, ""):
+            return str(value)
+    return ""
+
+
+def _is_online(item: dict[str, object], *keys: str) -> bool:
+    status = _text(item, *keys).lower()
+    return not status or status in _ONLINE
+
+
+def cameras_from_page(data: dict[str, object]) -> list[ImouCamera]:
+    """Lee con tolerancia la respuesta de device.detail.page."""
+    found: list[ImouCamera] = []
+    devices = data.get("deviceList") or data.get("devices") or []
+    for device in devices if isinstance(devices, list) else []:
+        if not isinstance(device, dict):
+            continue
+        device_id = _text(device, "deviceId", "deviceID")
+        device_name = _text(device, "deviceName", "name") or device_id
+        device_online = _is_online(device, "deviceStatus", "status")
+        channels = device.get("channelList") or device.get("channels") or [{"channelId": "0"}]
+        for channel in channels if isinstance(channels, list) else []:
+            if not isinstance(channel, dict) or not device_id:
+                continue
+            channel_id = _text(channel, "channelId", "channelID") or "0"
+            found.append(
+                ImouCamera(
+                    device_id=device_id,
+                    device_name=device_name,
+                    channel_id=channel_id,
+                    channel_name=_text(channel, "channelName", "name")
+                    or f"Canal {int(channel_id) + 1 if channel_id.isdigit() else channel_id}",
+                    online=device_online and _is_online(channel, "channelStatus", "status"),
+                )
+            )
+    return found
+
+
 class ImouCloudResolver:
     def __init__(
         self,
@@ -58,6 +119,25 @@ class ImouCloudResolver:
     @property
     def configured(self) -> bool:
         return bool(self._app_id and self._app_secret)
+
+    async def list_cameras(self) -> list[ImouCamera]:
+        """Todas las cámaras de la cuenta de Imou, un elemento por canal."""
+        if not self.configured:
+            raise ImouCloudError("CONFIG", "Faltan IMOU_APP_ID e IMOU_APP_SECRET")
+        cameras: list[ImouCamera] = []
+        async with httpx.AsyncClient(transport=self._transport, timeout=20) as client:
+            for page in range(1, _MAX_PAGES + 1):
+                data = await self._call(
+                    client,
+                    "v2/device.detail.page",
+                    {"page": page, "pageSize": _PAGE_SIZE, "source": "bindAndShare"},
+                )
+                batch = cameras_from_page(data)
+                cameras.extend(batch)
+                devices = data.get("deviceList")
+                if not isinstance(devices, list) or len(devices) < _PAGE_SIZE:
+                    break
+        return cameras
 
     async def resolve(self, url: str) -> str:
         if not self.configured:
