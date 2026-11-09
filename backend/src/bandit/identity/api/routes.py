@@ -120,6 +120,16 @@ async def logout(request: Request, response: Response, module: Module) -> None:
     response.delete_cookie(CSRF_COOKIE, path="/")
 
 
+class AuthOptionsResponse(BaseModel):
+    demo: bool
+
+
+@router.get("/options")
+async def auth_options(module: Module) -> AuthOptionsResponse:
+    """Público: el login avisa cuando está activa la cuenta de prueba."""
+    return AuthOptionsResponse(demo=module.demo_admin)
+
+
 @router.get("/me")
 async def me(user: CurrentUser) -> UserResponse:
     return UserResponse.of(user)
