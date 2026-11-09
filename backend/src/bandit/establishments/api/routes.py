@@ -6,9 +6,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Request, status
 from pydantic import BaseModel, Field
 
-from bandit.establishments.domain.models import Establishment
+from bandit.establishments.domain.models import Establishment, GeoPoint
 from bandit.establishments.module import EstablishmentsModule
-from bandit.identity.public import AdminUser, CurrentUser, User, require_csrf
+from bandit.identity.public import AdminUser, CurrentUser, ManagerUser, User, require_csrf
 from bandit.shared.errors import PermissionDeniedError
 
 router = APIRouter(prefix="/api/establishments", tags=["establishments"])
@@ -31,11 +31,18 @@ class WhatsAppRequest(BaseModel):
     number: str | None = Field(default=None, max_length=30)
 
 
+class LocationRequest(BaseModel):
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+
+
 class EstablishmentResponse(BaseModel):
     id: UUID
     name: str
     address: str
     cai_whatsapp: str | None
+    latitude: float | None = None
+    longitude: float | None = None
 
     @classmethod
     def of(cls, establishment: Establishment) -> "EstablishmentResponse":
@@ -45,6 +52,8 @@ class EstablishmentResponse(BaseModel):
             name=establishment.name,
             address=establishment.address,
             cai_whatsapp=number.value if number else None,
+            latitude=establishment.location.latitude if establishment.location else None,
+            longitude=establishment.location.longitude if establishment.location else None,
         )
 
 
@@ -82,3 +91,21 @@ async def set_cai_whatsapp(
     return EstablishmentResponse.of(
         await module.set_cai_whatsapp.execute(establishment_id, body.number)
     )
+
+
+@router.put("/{establishment_id}/location", dependencies=[Depends(require_csrf)])
+async def set_location(
+    establishment_id: UUID, body: LocationRequest, user: ManagerUser, module: Module
+) -> EstablishmentResponse:
+    _ensure_access(user, establishment_id)
+    point = GeoPoint(body.latitude, body.longitude)
+    return EstablishmentResponse.of(await module.set_location.execute(establishment_id, point))
+
+
+@router.post("/{establishment_id}/geocode", dependencies=[Depends(require_csrf)])
+async def locate_by_address(
+    establishment_id: UUID, user: ManagerUser, module: Module
+) -> EstablishmentResponse:
+    """Ubica el local en el mapa a partir de su dirección registrada."""
+    _ensure_access(user, establishment_id)
+    return EstablishmentResponse.of(await module.locate_by_address.execute(establishment_id))
