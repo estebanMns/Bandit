@@ -87,3 +87,32 @@ export function streamUrl(
   const credentials = `${encodeURIComponent(username)}:${encodeURIComponent(password)}`;
   return `rtsp://${credentials}@${ip}:${port}${path}`;
 }
+
+export interface ConnectionAttempt {
+  method: "red_local" | "nube_imou";
+  status: string;
+  detail: string;
+}
+
+export interface AutoConnectResult {
+  connected: boolean;
+  added: string[];
+  already: number;
+  attempts: ConnectionAttempt[];
+}
+
+export function autoConnect(
+  establishmentId: string,
+  network: string | null,
+  username: string,
+  password: string,
+): Promise<AutoConnectResult> {
+  return api(`/api/establishments/${establishmentId}/cameras/auto-connect`, {
+    method: "POST",
+    body: JSON.stringify({ network, username, password }),
+  });
+}
+
+export function connectionOptions(): Promise<{ imou_cloud: boolean }> {
+  return api("/api/cameras/connection-options");
+}
