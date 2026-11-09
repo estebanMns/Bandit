@@ -4,10 +4,22 @@
 # Nunca imprime el código de la cámara.
 set -euo pipefail
 
+# Compatible con Linux y macOS (incluido el bash 3.2 que trae macOS).
 VERSION="v1.12.2"
-ARCHIVE="mediamtx_${VERSION}_linux_amd64.tar.gz"
-SHA256="f0ec6e21c3cde41d02f186f58636f0ea8ee67c9d44dacf5b9391e85600f56e74"
 DIR="${HOME}/bandit-puente"
+
+case "$(uname -s)-$(uname -m)" in
+    Darwin-arm64) PLATFORM="darwin_arm64"; SHA256="df388cb70bcefe3822a63eb884576191120e63099d1fac4314d63d38b60eb238" ;;
+    Darwin-x86_64) PLATFORM="darwin_amd64"; SHA256="572a766870f821196ec0977fda7993ac5a8c45ba34174b3a048f000e3fe1dd0b" ;;
+    Linux-x86_64) PLATFORM="linux_amd64"; SHA256="f0ec6e21c3cde41d02f186f58636f0ea8ee67c9d44dacf5b9391e85600f56e74" ;;
+    Linux-aarch64 | Linux-arm64) PLATFORM="linux_arm64"; SHA256="35803953e27a7b242efb1f25b4d48e3cc24999bcb43f6895383a85d6f8000651" ;;
+    *) echo "Sistema no soportado: $(uname -s) $(uname -m)"; exit 1 ;;
+esac
+ARCHIVE="mediamtx_${VERSION}_${PLATFORM}.tar.gz"
+
+checksum() {
+    if command -v sha256sum >/dev/null; then sha256sum "$1"; else shasum -a 256 "$1"; fi
+}
 
 mkdir -p "$DIR"
 cd "$DIR"
@@ -15,14 +27,16 @@ cd "$DIR"
 if [[ ! -x ./mediamtx ]]; then
     echo "Descargando MediaMTX ${VERSION}..."
     curl -fsSL -o "$ARCHIVE" "https://github.com/bluenviron/mediamtx/releases/download/${VERSION}/${ARCHIVE}"
-    echo "${SHA256}  ${ARCHIVE}" | sha256sum --check --quiet
+    if [ "$(checksum "$ARCHIVE" | awk '{print $1}')" != "$SHA256" ]; then
+        echo "La descarga no coincide con el checksum oficial."; rm -f "$ARCHIVE"; exit 1
+    fi
     tar -xzf "$ARCHIVE" mediamtx
     rm -f "$ARCHIVE"
 fi
 
 if [[ -f mediamtx.yml ]]; then
     read -rp "Ya hay una configuración. ¿Crear una nueva? [s/N]: " again
-    [[ "${again,,}" == "s" ]] || exec ./mediamtx mediamtx.yml
+    case "$again" in s | S) ;; *) exec ./mediamtx mediamtx.yml ;; esac
 fi
 
 read -rp "IP de la cámara [192.168.1.102]: " camera_ip
@@ -75,11 +89,17 @@ paths:
 YAML
 chmod 600 mediamtx.yml
 
-if command -v ufw >/dev/null && sudo -n ufw status 2>/dev/null | grep -q "Status: active"; then
-    sudo ufw allow 8554/tcp >/dev/null
+if [ "$(uname -s)" = "Linux" ]; then
+    if command -v ufw >/dev/null && sudo -n ufw status 2>/dev/null | grep -q "Status: active"; then
+        sudo ufw allow 8554/tcp >/dev/null
+    fi
+    my_ip="$(ip -4 route get "$camera_ip" | awk '{for (i = 1; i < NF; i++) if ($i == "src") print $(i + 1)}')"
+else
+    # macOS: la interfaz que usa para llegar a la cámara, y su IP.
+    interface="$(route -n get "$camera_ip" 2>/dev/null | awk '/interface:/ {print $2}')"
+    my_ip="$(ipconfig getifaddr "${interface:-en0}" 2>/dev/null || true)"
+    echo "Si macOS pregunta si mediamtx puede aceptar conexiones, responde Permitir."
 fi
-
-my_ip="$(ip -4 route get "$camera_ip" | awk '{for (i = 1; i < NF; i++) if ($i == "src") print $(i + 1)}')"
 cat <<INFO
 
 Puente listo. Registra en Bandit estas dos cámaras:
