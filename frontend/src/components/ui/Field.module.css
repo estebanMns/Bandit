@@ -13,13 +13,13 @@
   padding: var(--e-2) var(--e-3);
   border: 2px solid var(--borde);
   border-radius: var(--radio-panel);
-  background: color-mix(in srgb, var(--fondo) 70%, black);
+  background: var(--campo-fondo);
   color: var(--texto);
   font: inherit;
 }
 
 .entrada[aria-invalid="true"] {
-  border-color: var(--baliza);
+  border-color: var(--error);
 }
 
 .ayuda {
@@ -28,6 +28,6 @@
 }
 
 .error {
-  color: var(--baliza);
+  color: var(--error);
   font-size: var(--t-sm);
 }
