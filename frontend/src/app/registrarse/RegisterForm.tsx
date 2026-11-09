@@ -37,7 +37,7 @@ export function RegisterForm() {
           local_address: data.get("localAddress"),
         }),
       });
-      router.push("/monitor");
+      router.push("/empezar");
     } catch (failure) {
       setError(failure instanceof ApiError ? failure.message : "No hay conexión con el servidor.");
       setPending(false);
