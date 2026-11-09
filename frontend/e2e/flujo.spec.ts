@@ -86,8 +86,10 @@ test("una persona nueva se registra, sale y vuelve a entrar", async ({ page }) =
 
   await page.getByLabel("Repite la clave").fill(password);
   await page.getByRole("button", { name: "Crear cuenta" }).click();
-  await page.waitForURL("**/monitor");
-  await expect(page.getByRole("heading", { name: "Conecta tu primera cámara" })).toBeVisible();
+  await page.waitForURL("**/empezar");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Deja Bandit listo para tu turno");
+  await expect(page.getByRole("heading", { name: "WhatsApp del CAI más cercano" })).toBeVisible();
+  await shot(page, "primeros-pasos");
 
   await page.goto("/ajustes/local");
   await expect(page.getByRole("heading", { name: "Restaurante de prueba" })).toBeVisible();
@@ -100,8 +102,8 @@ test("una persona nueva se registra, sale y vuelve a entrar", async ({ page }) =
   await page.getByLabel("Correo o usuario").fill(email);
   await page.getByLabel("Clave").fill(password);
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await page.waitForURL("**/monitor");
-  await expect(page.getByRole("heading", { name: "Conecta tu primera cámara" })).toBeVisible();
+  // Sin cámaras, el Monitor lleva a los primeros pasos.
+  await page.waitForURL("**/empezar");
 
   await page.getByRole("button", { name: "Salir" }).click();
   await page.waitForURL("**/ingresar");
