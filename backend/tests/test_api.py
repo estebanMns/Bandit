@@ -235,7 +235,9 @@ def register(client: TestClient, email: str, local: str = "Bar") -> dict[str, st
         },
     )
     assert response.status_code == 201, response.text
-    return {"X-CSRF-Token": client.cookies["bandit_csrf"]}
+    # El registro no abre sesión: se ingresa como lo haría la persona.
+    assert "bandit_session" not in response.cookies
+    return login(client, email)
 
 
 def only_local(client: TestClient) -> str:
@@ -486,3 +488,22 @@ def test_logout_ends_the_session_at_once(client: TestClient) -> None:
 
     client.cookies.set("bandit_session", token)
     assert client.get("/api/auth/me").status_code == 401
+
+
+def test_registration_asks_to_log_in_afterwards(client: TestClient) -> None:
+    client.cookies.clear()
+    response = client.post(
+        "/api/auth/register",
+        json={
+            "email": "nueva@example.com",
+            "password": PASSWORD,
+            "local_name": "Bar",
+            "local_address": "Calle 1",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["role"] == "owner"
+    assert client.get("/api/auth/me").status_code == 401
+    login(client, "nueva@example.com")
+    assert client.get("/api/auth/me").json()["role"] == "owner"
