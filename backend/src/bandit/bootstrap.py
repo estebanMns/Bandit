@@ -88,7 +88,8 @@ def _scene_analyzer(settings: Settings) -> SceneAnalyzer:
 def _directory_agent(settings: Settings) -> DirectoryAgent:
     if not settings.gemini_api_key:
         return DisabledDirectoryAgent()
-    return GeminiDirectoryAgent(settings.gemini_api_key, settings.gemini_model)
+    model = settings.gemini_directory_model or settings.gemini_model
+    return GeminiDirectoryAgent(settings.gemini_api_key, model)
 
 
 def _wire_events(bus: EventBus, app: Application) -> None:
