@@ -14,10 +14,15 @@ from bandit.analysis.infrastructure.gemini_analyzer import (
     GeminiSceneAnalyzer,
 )
 from bandit.analysis.module import AnalysisModule
+from bandit.cameras.application.discovery import PathAdvisor
 from bandit.cameras.domain.models import CameraStatusChanged
 from bandit.cameras.infrastructure import tables as camera_tables  # noqa: F401
 from bandit.cameras.infrastructure.fernet_cipher import FernetUrlCipher
 from bandit.cameras.infrastructure.ffmpeg_source import FfmpegFrameSource
+from bandit.cameras.infrastructure.gemini_path_advisor import (
+    DisabledPathAdvisor,
+    GeminiPathAdvisor,
+)
 from bandit.cameras.infrastructure.imou_cloud import ImouCloudResolver
 from bandit.cameras.infrastructure.resolving_source import ResolvingFrameSource
 from bandit.cameras.module import CamerasModule
@@ -85,11 +90,21 @@ def _scene_analyzer(settings: Settings) -> SceneAnalyzer:
     )
 
 
+def _text_model(settings: Settings) -> str:
+    """Modelo para tareas de texto: extraer el directorio y sugerir rutas de cámaras."""
+    return settings.gemini_directory_model or settings.gemini_model
+
+
+def _path_advisor(settings: Settings) -> PathAdvisor:
+    if not settings.gemini_api_key:
+        return DisabledPathAdvisor()
+    return GeminiPathAdvisor(settings.gemini_api_key, _text_model(settings))
+
+
 def _directory_agent(settings: Settings) -> DirectoryAgent:
     if not settings.gemini_api_key:
         return DisabledDirectoryAgent()
-    model = settings.gemini_directory_model or settings.gemini_model
-    return GeminiDirectoryAgent(settings.gemini_api_key, model)
+    return GeminiDirectoryAgent(settings.gemini_api_key, _text_model(settings))
 
 
 def _wire_events(bus: EventBus, app: Application) -> None:
@@ -144,6 +159,7 @@ def build_application(settings: Settings) -> Application:
         FernetUrlCipher(settings.camera_encryption_key),
         bus,
         clock,
+        _path_advisor(settings),
     )
     analysis = AnalysisModule(
         cameras.frames, cameras.get, _scene_analyzer(settings), settings, bus, clock
