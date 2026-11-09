@@ -1,5 +1,7 @@
 .pagina {
   display: grid;
+  /* La columna no crece con su contenido: evita que las fichas se salgan de la página. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--e-6);
   width: min(100% - 2 * var(--e-6), 72rem);
   margin: var(--e-8) auto var(--e-12);
@@ -29,18 +31,28 @@
 
 .filtros {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  /* minmax(0, …): una opción de delito muy larga no debe ensanchar la página. */
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--e-3);
 }
 
 .filtros label {
   display: grid;
   gap: var(--e-1);
+  min-width: 0;
   font-weight: 700;
+}
+
+@media (max-width: 40rem) {
+  .filtros {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .filtros input,
 .filtros select {
+  width: 100%;
+  min-width: 0;
   min-height: 44px;
   padding: var(--e-2);
   border: 2px solid var(--borde);
