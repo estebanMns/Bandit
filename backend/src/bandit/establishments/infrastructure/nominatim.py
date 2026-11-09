@@ -4,14 +4,11 @@ Política: máximo un pedido por segundo, User-Agent que identifique la aplicaci
 resultados en caché. https://operations.osmfoundation.org/policies/nominatim/
 """
 
-import asyncio
-import time
-
 import httpx
 
 from bandit.establishments.domain.models import GeoPoint
-
-_MIN_INTERVAL_SECONDS = 1.1
+from bandit.shared.errors import UnavailableError
+from bandit.shared.nominatim_gate import nominatim_turn
 
 
 class NominatimGeocoder:
@@ -25,27 +22,26 @@ class NominatimGeocoder:
         self._url = url
         self._transport = transport
         self._cache: dict[str, GeoPoint | None] = {}
-        self._lock = asyncio.Lock()
-        self._last = 0.0
 
     async def locate(self, address: str) -> GeoPoint | None:
         key = " ".join(address.lower().split())
         if key in self._cache:
             return self._cache[key]
-        async with self._lock:
-            wait = _MIN_INTERVAL_SECONDS - (time.monotonic() - self._last)
-            if wait > 0:
-                await asyncio.sleep(wait)
-            try:
-                async with httpx.AsyncClient(transport=self._transport, timeout=15) as client:
-                    response = await client.get(
-                        self._url,
-                        params={"q": address, "format": "jsonv2", "limit": 1, "countrycodes": "co"},
-                        headers={"User-Agent": self._user_agent, "Accept-Language": "es"},
-                    )
-            finally:
-                self._last = time.monotonic()
-        response.raise_for_status()
+        try:
+            async with (
+                nominatim_turn(),
+                httpx.AsyncClient(transport=self._transport, timeout=15) as client,
+            ):
+                response = await client.get(
+                    self._url,
+                    params={"q": address, "format": "jsonv2", "limit": 1, "countrycodes": "co"},
+                    headers={"User-Agent": self._user_agent, "Accept-Language": "es"},
+                )
+            response.raise_for_status()
+        except httpx.HTTPError as error:
+            raise UnavailableError(
+                "El servicio de mapas no respondió. Intenta de nuevo."
+            ) from error
         results = response.json()
         point = (
             GeoPoint(float(results[0]["lat"]), float(results[0]["lon"]))
