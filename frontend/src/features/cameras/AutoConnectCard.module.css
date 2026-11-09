@@ -1,0 +1,93 @@
+.tarjeta {
+  display: grid;
+  gap: var(--e-4);
+}
+
+.formulario {
+  display: grid;
+  gap: var(--e-3);
+  justify-items: start;
+}
+
+.formulario > div {
+  width: 100%;
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: minmax(0, 0.6fr) minmax(0, 1.4fr);
+  gap: var(--e-3);
+}
+
+.nota {
+  color: var(--agua);
+  font-size: var(--t-sm);
+}
+
+.error {
+  color: var(--error);
+  font-size: var(--t-sm);
+}
+
+.resultado {
+  display: grid;
+  gap: var(--e-2);
+}
+
+.titulo {
+  font-family: var(--fuente-titulo);
+  font-weight: 700;
+}
+
+.intentos {
+  display: grid;
+  gap: var(--e-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.intentos li {
+  display: grid;
+  gap: var(--e-1);
+  padding: var(--e-2) var(--e-3);
+  border-left: 3px solid var(--borde);
+  font-size: var(--t-sm);
+}
+
+.intentos li[data-estado="ok"] {
+  border-color: var(--agua);
+}
+
+.intentos li[data-estado="fallo"] {
+  border-color: var(--sodio);
+}
+
+.guia {
+  padding: var(--e-3) var(--e-4);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-panel);
+}
+
+.guia summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.guia ol {
+  display: grid;
+  gap: var(--e-2);
+  margin: var(--e-3) 0 0;
+  padding-left: var(--e-6);
+}
+
+.guia a {
+  color: var(--sodio);
+  font-weight: 700;
+}
+
+@media (max-width: 40rem) {
+  .fila {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
