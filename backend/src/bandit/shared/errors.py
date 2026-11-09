@@ -27,3 +27,7 @@ class RateLimitedError(DomainError):
 
 class PermissionDeniedError(DomainError):
     """La sesión no tiene permiso para la operación."""
+
+
+class UnavailableError(DomainError):
+    """Un servicio externo no respondió; se puede reintentar más tarde."""
