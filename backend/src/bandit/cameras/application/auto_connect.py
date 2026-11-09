@@ -142,12 +142,16 @@ class AutoConnect:
             return
         cameras = [device for device in devices if set(device.open_ports) & _RTSP_PORTS]
         if not cameras:
-            others = len(devices)
+            answered = (
+                "respondió 1 equipo"
+                if len(devices) == 1
+                else f"respondieron {len(devices)} equipos"
+            )
             result.attempts.append(
                 Attempt(
                     Method.LAN,
                     AttemptStatus.NOTHING_FOUND,
-                    f"Se revisó la red y respondieron {others} equipos, ninguno con video RTSP. "
+                    f"Se revisó la red y {answered}, ninguno con video RTSP. "
                     "Si la cámara está en este Wi-Fi, puede estar bloqueando a este equipo.",
                 )
             )
