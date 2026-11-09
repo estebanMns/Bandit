@@ -27,6 +27,10 @@ class SessionRepository(Protocol):
 
     async def get(self, token_hash: str) -> Session | None: ...
 
+    async def get_with_user(self, token_hash: str) -> tuple[Session, User] | None:
+        """La sesión y su usuario en una sola consulta."""
+        ...
+
     async def delete(self, token_hash: str) -> None: ...
 
 
