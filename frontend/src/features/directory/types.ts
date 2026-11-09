@@ -11,4 +11,8 @@ export interface WantedRecord {
   flyer_url: string | null;
   source_url: string;
   last_seen_at: string | null;
+  /** Recompensa en pesos según el texto publicado por la Policía; null si no hay monto. */
+  reward_amount: number | null;
+  /** Gravedad del delito publicado según una lista fija; null si no se conoce. */
+  crime_level: string | null;
 }
