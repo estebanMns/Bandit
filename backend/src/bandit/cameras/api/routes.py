@@ -203,3 +203,54 @@ async def connect_device(
             for stream in result.streams
         ],
     )
+
+
+class AutoConnectRequest(BaseModel):
+    network: str | None = Field(default=None, max_length=40)
+    username: str = Field(default="admin", max_length=100)
+    password: str = Field(default="", max_length=200)
+
+
+class AttemptResponse(BaseModel):
+    method: str
+    status: str
+    detail: str
+
+
+class AutoConnectResponse(BaseModel):
+    connected: bool
+    added: list[str]
+    already: int
+    attempts: list[AttemptResponse]
+
+
+class ConnectionOptionsResponse(BaseModel):
+    imou_cloud: bool
+
+
+@router.get("/cameras/connection-options")
+async def connection_options(_: CurrentUser, module: Module) -> ConnectionOptionsResponse:
+    return ConnectionOptionsResponse(imou_cloud=module.cloud.configured)
+
+
+@router.post(
+    "/establishments/{establishment_id}/cameras/auto-connect",
+    dependencies=[Depends(require_csrf)],
+)
+async def auto_connect(
+    establishment_id: UUID, body: AutoConnectRequest, user: ManagerUser, module: Module
+) -> AutoConnectResponse:
+    """Prueba la red local y, si no alcanza, la nube de Imou. Nunca devuelve claves."""
+    _ensure_access(user, establishment_id)
+    result = await module.auto_connect.execute(
+        establishment_id, body.network, body.username, body.password
+    )
+    return AutoConnectResponse(
+        connected=result.connected,
+        added=result.added,
+        already=result.already,
+        attempts=[
+            AttemptResponse(method=a.method.value, status=a.status.value, detail=a.detail)
+            for a in result.attempts
+        ],
+    )
