@@ -1,21 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { RegisterForm } from "./RegisterForm";
+import { AuthLayout } from "@/components/AuthLayout";
 import styles from "../ingresar/page.module.css";
+import { RegisterForm } from "./RegisterForm";
 
 export const metadata: Metadata = { title: "Crear cuenta" };
 
 export default function RegisterPage() {
   return (
-    <main className={`${styles.pagina} ${styles.registro}`}>
-      <h1 className={styles.titulo}>Crea tu cuenta</h1>
-      <p className={styles.bajada}>
-        Registra tu local y empieza a vigilar el turno. Luego podrás conectar tus cámaras.
-      </p>
+    <AuthLayout
+      eyebrow="Crear cuenta"
+      title="Registra tu local"
+      subtitle="Crea tu cuenta y luego conecta tus cámaras."
+    >
       <RegisterForm />
-      <p className={styles.alterno}>
-        ¿Ya tienes cuenta? <Link href="/ingresar">Ingresa aquí</Link>
-      </p>
-    </main>
+      <p className={styles.separador}>o</p>
+      <Link href="/ingresar" className={styles.secundario}>
+        Ya tengo cuenta, ingresar <span aria-hidden="true">→</span>
+      </Link>
+    </AuthLayout>
   );
 }
