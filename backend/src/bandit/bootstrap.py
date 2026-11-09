@@ -130,6 +130,7 @@ def build_application(settings: Settings) -> Application:
         timedelta(hours=settings.session_ttl_hours),
         settings.cookie_secure,
         _EstablishmentCreator(establishments),
+        settings.demo_admin,
     )
     cameras = CamerasModule(
         sessions,
