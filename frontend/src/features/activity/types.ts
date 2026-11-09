@@ -31,6 +31,8 @@ export interface CameraActivity {
 
 export interface ActivitySnapshot {
   model_enabled: boolean;
+  /** Modelo en uso; cambia al de respaldo si el principal se queda sin cuota. */
+  model?: string | null;
   budget: { used: number; limit: number };
   cameras: CameraActivity[];
 }
