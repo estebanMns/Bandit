@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { formatReward } from "@/features/directory/priority";
 import type { WantedRecord } from "@/features/directory/types";
 import { formatDateTime } from "@/features/incidents/labels";
 import { ApiError } from "@/lib/api";
@@ -97,6 +98,7 @@ export function DirectoryPanel() {
                     <span className={styles.sinFoto}>Sin foto</span>
                   )}
                   <strong>{record.name}</strong>
+                  <span className={styles.detalle}>{formatReward(record)}</span>
                   {record.crime && <span className={styles.detalle}>{record.crime}</span>}
                 </Link>
               </li>
