@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { PasswordField } from "@/components/ui/PasswordField";
 import { api, ApiError } from "@/lib/api";
 import styles from "../ingresar/page.module.css";
 
@@ -59,25 +60,23 @@ export function RegisterForm() {
       <fieldset className={styles.grupo}>
         <legend>Tu cuenta</legend>
         <Field label="Correo" name="email" type="email" autoComplete="username" required />
-        <Field
+        <PasswordField
           label="Clave"
           name="password"
-          type="password"
           autoComplete="new-password"
           minLength={MIN_PASSWORD_LENGTH}
           hint={`Mínimo ${MIN_PASSWORD_LENGTH} caracteres.`}
           required
         />
-        <Field
+        <PasswordField
           label="Repite la clave"
           name="confirmation"
-          type="password"
           autoComplete="new-password"
           required
           error={mismatch ? "Las claves no coinciden." : error}
         />
       </fieldset>
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending} className={styles.principal}>
         {pending ? "Creando cuenta" : "Crear cuenta"}
       </Button>
     </form>
