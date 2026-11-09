@@ -15,9 +15,6 @@ export interface Step {
   optional: boolean;
 }
 
-/** Elegir "lo hago después" dura la sesión del navegador: no vuelve a insistir en esta pestaña. */
-export const LATER_KEY = "bandit.configurar-despues";
-
 export function steps(state: SetupState): Step[] {
   const ready = state.hasLocal && state.cameraCount > 0;
   return [
