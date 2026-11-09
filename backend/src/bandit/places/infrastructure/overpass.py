@@ -57,7 +57,7 @@ class OverpassPoliceStations:
 
     async def around(self, latitude: float, longitude: float, radius_m: int) -> list[Place]:
         query = _QUERY.format(radius=radius_m, lat=latitude, lng=longitude)
-        async with httpx.AsyncClient(transport=self._transport, timeout=30) as client:
+        async with httpx.AsyncClient(transport=self._transport, timeout=12) as client:
             response = await client.post(
                 self._url, data={"data": query}, headers={"User-Agent": self._user_agent}
             )
