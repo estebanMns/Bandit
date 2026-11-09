@@ -80,5 +80,6 @@ class BudgetResponse(BaseModel):
 
 class ActivityResponse(BaseModel):
     model_enabled: bool
+    model: str | None = None
     budget: BudgetResponse
     cameras: list[CameraActivityResponse]
