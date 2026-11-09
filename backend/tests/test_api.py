@@ -507,3 +507,21 @@ def test_registration_asks_to_log_in_afterwards(client: TestClient) -> None:
     assert client.get("/api/auth/me").status_code == 401
     login(client, "nueva@example.com")
     assert client.get("/api/auth/me").json()["role"] == "owner"
+
+
+def test_location_and_map_require_a_session_and_stay_in_narino(client: TestClient) -> None:
+    assert client.get("/api/map/tiles/13/2335/4068.png").status_code == 401
+    assert client.get("/api/places/nearby-cai?lat=1.21&lng=-77.28").status_code == 401
+
+    headers = register(client, "mapa@example.com")
+    local = only_local(client)
+    response = client.put(
+        f"/api/establishments/{local}/location",
+        json={"latitude": 1.2136, "longitude": -77.2811},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["latitude"] == 1.2136
+    assert client.get("/api/places/nearby-cai?lat=4.71&lng=-74.07").status_code == 422
+    assert client.get("/api/map/tiles/13/2390/3960.png").status_code == 404
