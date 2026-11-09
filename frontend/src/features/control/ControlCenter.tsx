@@ -393,11 +393,11 @@ export function ControlCenter() {
                         </span>
                         <span className={styles.medida}>
                           {last ? `${Math.round(last.motion * 100)}%` : "—"}
-                          <small>MOVIMIENTO</small>
+                          <small>MOV.</small>
                         </span>
                         <span className={styles.medida}>
                           {activity?.counts.analyzed ?? 0}
-                          <small>ANÁLISIS</small>
+                          <small>IA HOY</small>
                         </span>
                         <span className={styles.vivo} data-vivo={live}>
                           <span className={styles.punto} data-ok={live} aria-hidden="true" />
