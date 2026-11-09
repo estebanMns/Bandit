@@ -464,6 +464,8 @@
 }
 
 .vacia {
+  /* Sin video no hay fondo negro: el texto debe contrastar en ambos temas. */
+  background: var(--superficie);
   display: grid;
   place-items: center;
   align-content: center;
