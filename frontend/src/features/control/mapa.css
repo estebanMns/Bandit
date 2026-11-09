@@ -1,0 +1,20 @@
+/* Marcadores del mapa de Leaflet: CSS puro, sin imágenes de otros dominios (COEP). */
+
+.bandit-marcador {
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgb(0 0 0 / 25%);
+}
+
+.bandit-marcador-local {
+  background: #4096ff;
+}
+
+.bandit-marcador-cai {
+  background: #35d6a4;
+}
+
+.leaflet-container {
+  background: #0a131c;
+  font: inherit;
+}
