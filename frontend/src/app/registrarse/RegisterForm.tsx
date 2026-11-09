@@ -1,20 +1,30 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import Link from "next/link";
+import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { PasswordField } from "@/components/ui/PasswordField";
+import { LOGIN_AFTER_SIGNUP, REGISTERED_EMAIL_KEY } from "@/features/onboarding/signup";
 import { api, ApiError } from "@/lib/api";
 import styles from "../ingresar/page.module.css";
 
 const MIN_PASSWORD_LENGTH = 12;
+const REDIRECT_MS = 2500;
 
 export function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [mismatch, setMismatch] = useState(false);
   const [pending, setPending] = useState(false);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (!done) return;
+    const timer = window.setTimeout(() => router.replace(LOGIN_AFTER_SIGNUP), REDIRECT_MS);
+    return () => window.clearTimeout(timer);
+  }, [done, router]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,11 +47,39 @@ export function RegisterForm() {
           local_address: data.get("localAddress"),
         }),
       });
-      router.push("/empezar");
+      sessionStorage.setItem(REGISTERED_EMAIL_KEY, String(data.get("email")));
+      setDone(true);
     } catch (failure) {
       setError(failure instanceof ApiError ? failure.message : "No hay conexión con el servidor.");
       setPending(false);
     }
+  }
+
+  if (done) {
+    return (
+      <div className={styles.exito} role="status">
+        <span className={styles.exitoIcono} aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="26"
+            height="26"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <path d="m5 12.5 4.5 4.5L19 7" />
+          </svg>
+        </span>
+        <div>
+          <p className={styles.exitoTitulo}>Registro exitoso</p>
+          <p>Tu cuenta y tu local quedaron creados. Ahora ingresa con tu correo y clave.</p>
+          <p className={styles.exitoNota}>Te llevamos al ingreso en unos segundos…</p>
+        </div>
+        <Link href={LOGIN_AFTER_SIGNUP} className={styles.exitoBoton}>
+          Ir a ingresar
+        </Link>
+      </div>
+    );
   }
 
   return (
