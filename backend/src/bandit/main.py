@@ -16,6 +16,7 @@ from bandit.establishments.api.routes import router as establishments_router
 from bandit.identity.api.routes import router as identity_router
 from bandit.incidents.api.routes import router as incidents_router
 from bandit.notifications.api.routes import router as notifications_router
+from bandit.places.api.routes import router as places_router
 from bandit.realtime.api.routes import router as realtime_router
 from bandit.shared.config import Settings, get_settings
 from bandit.shared.http import install_error_handlers
@@ -63,6 +64,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.incidents = application.incidents
     app.state.notifications = application.notifications
     app.state.directory = application.directory
+    app.state.places = application.places
     app.state.event_hub = application.event_hub
     install_error_handlers(app)
     for router in (
@@ -74,6 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         incidents_router,
         notifications_router,
         directory_router,
+        places_router,
         realtime_router,
     ):
         app.include_router(router)
