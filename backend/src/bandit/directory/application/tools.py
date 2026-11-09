@@ -33,6 +33,8 @@ class ScrapingTools:
         self.accepted: dict[str, ExtractedRecord] = {}
         self.rejected = 0
         self.finished = False
+        self.failed_pages = 0
+        self.last_error: str | None = None
 
     async def open_listing_page(self, page: int) -> str:
         if not 0 <= page < MAX_LISTING_PAGES:
@@ -68,6 +70,7 @@ class ScrapingTools:
             hotline_phones=tuple(phone for phone in record.hotline_phones if phone.strip()),
             photo_url=record.photo_url if record.photo_url in self._known_urls else None,
             flyer_url=record.flyer_url if record.flyer_url in self._known_urls else None,
+            listing_position=record.listing_position,
         )
         claims = [
             cleaned.name,
@@ -91,6 +94,12 @@ class ScrapingTools:
             return "Rechazado: algún dato no aparece textualmente en la fuente."
         self.accepted[normalize_text(cleaned.name)] = cleaned
         return "Registro aceptado."
+
+    def record_page_failure(self, detail: str) -> None:
+        """Una página que falló no detiene la extracción, pero impide retirar registros."""
+        self.failed_pages += 1
+        self.last_error = detail[:300]
+        logger.warning("Falló la extracción de una página: %s", self.last_error)
 
     def finish(self) -> str:
         self.finished = True
