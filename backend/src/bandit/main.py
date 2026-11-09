@@ -43,6 +43,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await application.identity.bootstrap_admin.execute(
             resolved.bootstrap_admin_email, resolved.bootstrap_admin_password
         )
+        await application.identity.sync_demo_admin.execute(resolved.demo_admin)
         scheduler.start()
         await application.cameras.supervisor.start_all()
         await application.directory.runner.start_if_stale()
