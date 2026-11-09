@@ -7,6 +7,7 @@ from cryptography.fernet import Fernet
 from bandit.cameras.domain.models import CameraStatus, CameraStatusChanged, validate_stream_url
 from bandit.cameras.infrastructure.fernet_cipher import FernetUrlCipher
 from bandit.cameras.infrastructure.gemini_path_advisor import DisabledPathAdvisor
+from bandit.cameras.infrastructure.imou_cloud import ImouCloudResolver
 from bandit.cameras.module import CamerasModule
 from bandit.establishments.module import EstablishmentsModule
 from bandit.shared.errors import InvalidDataError
@@ -47,7 +48,13 @@ async def establishment(sessions):
 
 def build(sessions, source, cipher, clock, bus=None) -> CamerasModule:
     return CamerasModule(
-        sessions, source, cipher, bus or InMemoryEventBus(), clock, DisabledPathAdvisor()
+        sessions,
+        source,
+        cipher,
+        bus or InMemoryEventBus(),
+        clock,
+        DisabledPathAdvisor(),
+        ImouCloudResolver("", "", "https://imou.invalid/openapi"),
     )
 
 
