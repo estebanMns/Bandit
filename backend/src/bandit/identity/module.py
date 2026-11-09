@@ -10,6 +10,7 @@ from bandit.identity.application.use_cases import (
     Logout,
     RegisterUser,
     SignUp,
+    SyncDemoAdmin,
 )
 from bandit.identity.domain.ports import EstablishmentCreator
 from bandit.identity.infrastructure.argon2_hasher import Argon2PasswordHasher
@@ -26,15 +27,18 @@ class IdentityModule:
         session_ttl: timedelta,
         cookie_secure: bool,
         establishments: EstablishmentCreator,
+        demo_admin: bool = False,
     ) -> None:
         users = SqlUserRepository(sessions)
         session_repository = SqlSessionRepository(sessions)
         hasher = Argon2PasswordHasher()
 
         self.cookie_secure = cookie_secure
+        self.demo_admin = demo_admin
         self.session_ttl = session_ttl
         self.register_user = RegisterUser(users, hasher)
         self.bootstrap_admin = BootstrapAdmin(users, self.register_user)
+        self.sync_demo_admin = SyncDemoAdmin(users, hasher)
         self.login = Login(users, session_repository, hasher, clock, session_ttl, AttemptThrottle())
         self.sign_up = SignUp(
             self.register_user,
