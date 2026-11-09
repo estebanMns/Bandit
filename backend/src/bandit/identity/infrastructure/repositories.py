@@ -89,3 +89,17 @@ class SqlSessionRepository:
     async def delete(self, token_hash: str) -> None:
         async with self._sessions.begin() as session:
             await session.execute(delete(SessionRow).where(SessionRow.token_hash == token_hash))
+
+    async def get_with_user(self, token_hash: str) -> tuple[Session, User] | None:
+        async with self._sessions() as session:
+            found = (
+                await session.execute(
+                    select(SessionRow, UserRow)
+                    .join(UserRow, UserRow.id == SessionRow.user_id)
+                    .where(SessionRow.token_hash == token_hash)
+                )
+            ).first()
+            if found is None:
+                return None
+            row, user = found
+            return Session(row.token_hash, row.user_id, row.expires_at), _to_user(user)
