@@ -5,6 +5,8 @@ export interface Establishment {
   name: string;
   address: string;
   cai_whatsapp: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export function listEstablishments(): Promise<Establishment[]> {
@@ -23,4 +25,15 @@ export function setCaiWhatsApp(id: string, number: string | null): Promise<Estab
     method: "PUT",
     body: JSON.stringify({ number }),
   });
+}
+
+export function setLocation(id: string, latitude: number, longitude: number): Promise<Establishment> {
+  return api(`/api/establishments/${id}/location`, {
+    method: "PUT",
+    body: JSON.stringify({ latitude, longitude }),
+  });
+}
+
+export function locateByAddress(id: string): Promise<Establishment> {
+  return api(`/api/establishments/${id}/geocode`, { method: "POST" });
 }
