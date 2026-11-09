@@ -148,18 +148,18 @@ def build_application(settings: Settings) -> Application:
         _EstablishmentCreator(establishments),
         settings.demo_admin,
     )
+    imou = ImouCloudResolver(settings.imou_app_id, settings.imou_app_secret, settings.imou_api_url)
     cameras = CamerasModule(
         sessions,
         ResolvingFrameSource(
             FfmpegFrameSource(settings.ffmpeg_path, settings.video_fps, settings.video_width),
-            ImouCloudResolver(
-                settings.imou_app_id, settings.imou_app_secret, settings.imou_api_url
-            ),
+            imou,
         ),
         FernetUrlCipher(settings.camera_encryption_key),
         bus,
         clock,
         _path_advisor(settings),
+        imou,
     )
     analysis = AnalysisModule(
         cameras.frames, cameras.get, _scene_analyzer(settings), settings, bus, clock
