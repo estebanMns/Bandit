@@ -431,3 +431,47 @@ def test_directory_extraction_runs_at_startup_and_limits_manual_runs(
 
 def test_directory_status_requires_a_session(client: TestClient) -> None:
     assert client.get("/api/directory/sync-runs").status_code == 401
+
+
+def demo_client(tmp_path: Path, demo: bool) -> TestClient:
+    url = f"sqlite+aiosqlite:///{tmp_path / 'demo.db'}"
+    settings = Settings(
+        _env_file=None,
+        database_url=url,
+        camera_encryption_key=Fernet.generate_key().decode(),
+        ffmpeg_path="ffmpeg-inexistente",
+        media_root=str(tmp_path),
+        demo_admin=demo,
+    )
+    if not (tmp_path / "demo.db").exists():
+        asyncio.run(_create_schema(url))
+    return TestClient(create_app(settings))
+
+
+def demo_login(client: TestClient) -> int:
+    return client.post("/api/auth/login", json={"email": "admin", "password": "admin"}).status_code
+
+
+def test_demo_account_exists_only_while_enabled(tmp_path: Path) -> None:
+    with demo_client(tmp_path, demo=True) as client:
+        assert client.get("/api/auth/options").json() == {"demo": True}
+        assert demo_login(client) == 200
+        assert client.get("/api/auth/me").json()["role"] == "admin"
+
+    with demo_client(tmp_path, demo=False) as client:
+        assert client.get("/api/auth/options").json() == {"demo": False}
+        assert demo_login(client) == 401
+
+
+def test_open_registration_still_requires_long_passwords(tmp_path: Path) -> None:
+    with demo_client(tmp_path, demo=True) as client:
+        response = client.post(
+            "/api/auth/register",
+            json={
+                "email": "corta@example.com",
+                "password": "admin",
+                "local_name": "Bar",
+                "local_address": "Calle 1",
+            },
+        )
+        assert response.status_code == 422
