@@ -50,6 +50,8 @@ from bandit.notifications.infrastructure import tables as notification_tables  #
 from bandit.notifications.infrastructure.web_push import VapidPushSender
 from bandit.notifications.infrastructure.whatsapp_cloud import WhatsAppCloudSender
 from bandit.notifications.module import NotificationsModule
+from bandit.places.infrastructure.fallback import FirstAvailableStations
+from bandit.places.infrastructure.nominatim_police import NominatimPoliceStations
 from bandit.places.infrastructure.osm_tiles import CachedOsmTiles
 from bandit.places.infrastructure.overpass import OverpassPoliceStations
 from bandit.places.module import PlacesModule
@@ -213,7 +215,12 @@ def build_application(settings: Settings) -> Application:
         notifications=notifications,
         directory=directory,
         places=PlacesModule(
-            OverpassPoliceStations(settings.osm_user_agent),
+            FirstAvailableStations(
+                [
+                    NominatimPoliceStations(settings.osm_user_agent),
+                    OverpassPoliceStations(settings.osm_user_agent),
+                ]
+            ),
             CachedOsmTiles(str(Path(settings.media_root) / "tiles"), settings.osm_user_agent),
         ),
         event_hub=EventHub(),
