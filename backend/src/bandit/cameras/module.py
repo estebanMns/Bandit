@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 
+from bandit.cameras.application.auto_connect import AutoConnect, CameraCloud
 from bandit.cameras.application.discovery import ConnectDevice, PathAdvisor, ScanNetwork
 from bandit.cameras.application.frame_hub import FrameHub
 from bandit.cameras.application.supervisor import CaptureSupervisor
@@ -32,6 +33,7 @@ class CamerasModule:
         bus: EventBus,
         clock: Clock,
         advisor: PathAdvisor,
+        cloud: CameraCloud,
     ) -> None:
         repository = SqlCameraRepository(sessions)
         self.frames = FrameHub()
@@ -44,3 +46,7 @@ class CamerasModule:
         scanner = LanScanner()
         self.scan_network = ScanNetwork(scanner, clock, SCAN_GAP)
         self.connect_device = ConnectDevice(scanner, RtspProbe(), advisor)
+        self.cloud = cloud
+        self.auto_connect = AutoConnect(
+            self.scan_network, self.connect_device, self.register, self.list_for, cipher, cloud
+        )
