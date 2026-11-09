@@ -42,7 +42,7 @@ export function LoginForm() {
         method: "POST",
         body: JSON.stringify({ email: data.get("email"), password: data.get("password") }),
       });
-      router.push("/monitor");
+      router.push("/panel");
     } catch (failure) {
       setError(failure instanceof ApiError ? failure.message : "No hay conexión con el servidor.");
       setPending(false);
