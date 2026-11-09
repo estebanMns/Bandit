@@ -86,7 +86,10 @@ def _scene_analyzer(settings: Settings) -> SceneAnalyzer:
     if not settings.gemini_api_key:
         return DisabledSceneAnalyzer()
     return GeminiSceneAnalyzer(
-        settings.gemini_api_key, settings.gemini_model, settings.gemini_media_resolution
+        settings.gemini_api_key,
+        settings.gemini_model,
+        settings.gemini_media_resolution,
+        fallback_model=settings.gemini_directory_model,
     )
 
 
