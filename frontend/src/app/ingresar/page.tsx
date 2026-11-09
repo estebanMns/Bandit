@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AuthLayout } from "@/components/AuthLayout";
 import { LoginForm } from "./LoginForm";
 import styles from "./page.module.css";
 
@@ -7,13 +8,16 @@ export const metadata: Metadata = { title: "Ingresar" };
 
 export default function LoginPage() {
   return (
-    <main className={styles.pagina}>
-      <h1 className={styles.titulo}>Empieza el turno</h1>
-      <p className={styles.bajada}>Ingresa con tu cuenta para ver las cámaras de tu local.</p>
+    <AuthLayout
+      eyebrow="Acceso seguro"
+      title="Bienvenido de nuevo"
+      subtitle="Ingresa para ver las cámaras de tu local."
+    >
       <LoginForm />
-      <p className={styles.alterno}>
-        ¿Aún no tienes cuenta? <Link href="/registrarse">Crea una cuenta</Link>
-      </p>
-    </main>
+      <p className={styles.separador}>o</p>
+      <Link href="/registrarse" className={styles.secundario}>
+        Crear una cuenta para tu local <span aria-hidden="true">→</span>
+      </Link>
+    </AuthLayout>
   );
 }

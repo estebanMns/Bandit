@@ -7,6 +7,7 @@ from google.genai import types
 from pydantic import BaseModel, Field
 
 from bandit.analysis.domain.models import SceneAssessment, Severity, SituationType
+from bandit.shared.gemini import http_options
 
 SYSTEM_INSTRUCTION = """\
 Analizas un fotograma de una cámara de seguridad dentro de un local comercial en Colombia.
@@ -52,7 +53,10 @@ def parse_assessment(raw: str) -> SceneAssessment:
 
 class GeminiSceneAnalyzer:
     def __init__(self, api_key: str, model: str, media_resolution: str) -> None:
-        self._client = genai.Client(api_key=api_key)
+        # En vivo conviene fallar pronto: el siguiente fotograma llega en segundos.
+        self._client = genai.Client(
+            api_key=api_key, http_options=http_options(attempts=3, max_delay=8)
+        )
         self._model = model
         self._config = types.GenerateContentConfig(
             system_instruction=SYSTEM_INSTRUCTION,

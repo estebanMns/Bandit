@@ -17,6 +17,8 @@
   --accion: var(--sodio);
   --sobre-accion: var(--noche);
   --foco: var(--agua);
+  --campo-fondo: color-mix(in srgb, var(--fondo) 70%, black);
+  --error: var(--baliza);
 
   --fuente-texto: var(--font-atkinson), system-ui, sans-serif;
   --fuente-titulo: var(--font-archivo), system-ui, sans-serif;
@@ -56,4 +58,7 @@
   --accion: var(--noche);
   --sobre-accion: var(--hielo);
   --foco: #0b7f79;
+  --campo-fondo: #ffffff;
+  /* La baliza no alcanza contraste AA sobre papel claro. */
+  --error: #b3123a;
 }

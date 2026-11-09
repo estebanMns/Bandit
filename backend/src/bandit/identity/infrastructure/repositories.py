@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from bandit.identity.domain.models import Role, Session, User
@@ -54,6 +54,17 @@ class SqlUserRepository:
     async def count(self) -> int:
         async with self._sessions() as session:
             return await session.scalar(select(func.count()).select_from(UserRow)) or 0
+
+    async def set_password(self, user_id: UUID, password_hash: str) -> None:
+        async with self._sessions.begin() as session:
+            await session.execute(
+                update(UserRow).where(UserRow.id == user_id).values(password_hash=password_hash)
+            )
+
+    async def delete(self, user_id: UUID) -> None:
+        async with self._sessions.begin() as session:
+            await session.execute(delete(SessionRow).where(SessionRow.user_id == user_id))
+            await session.execute(delete(UserRow).where(UserRow.id == user_id))
 
 
 class SqlSessionRepository:

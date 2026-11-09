@@ -41,6 +41,32 @@ docker compose up -d --build
 Abre <http://localhost:8080>, pulsa **Crear cuenta** y registra tu local. Luego sigue la guía
 en `/guia`.
 
+### Usarlo en Mac
+
+Funciona igual en Mac con Apple Silicon o Intel: las imágenes de Docker son multiplataforma.
+
+1. Instala [Docker Desktop para Mac](https://docs.docker.com/desktop/setup/install/mac-install/)
+   y ábrelo.
+2. Clona el proyecto:
+   ```bash
+   git clone https://github.com/estebanMns/Bandit.git
+   cd Bandit
+   ```
+3. Copia tu `.env` al Mac por un medio privado (AirDrop, USB o un gestor de contraseñas), nunca
+   por git ni por chat. **Debe tener la misma `CAMERA_ENCRYPTION_KEY`**: sin ella Bandit no puede
+   leer las cámaras ya guardadas en Supabase. Para probar, deja `DEMO_ADMIN=true`.
+4. Arranca y abre <http://localhost:8080>. Con el modo de prueba entras con `admin` / `admin`.
+   ```bash
+   docker compose up -d --build
+   ```
+5. Comprueba si el Mac alcanza la cámara directamente:
+   ```bash
+   nc -vz 192.168.1.102 554
+   ```
+   Si dice `succeeded`, registra en **Cámaras** la URL `rtsp://` directa de la cámara, sin puente
+   ni nube. Si no, usa el puente (`bash relay/iniciar-puente.sh`, que también corre en macOS) o la
+   nube de Imou.
+
 ### Cuentas y roles
 
 | Rol | Cómo se crea | Alcance |
@@ -48,9 +74,10 @@ en `/guia`.
 | Dueño | Registro en `/registrarse` | Administra solo su local |
 | Operador | Un administrador, por `POST /api/auth/users` | Vigila y decide en su local |
 | Administrador | `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD` en `.env`, opcional | Ve todos los locales y sincroniza el directorio |
+| Administrador de prueba | `DEMO_ADMIN=true` en `.env`: usuario `admin`, clave `admin` | Igual que un administrador. Con `false` la cuenta se borra al arrancar |
 
-La sincronización manual del directorio requiere un administrador. La extracción programada corre
-sola. El registro no verifica el correo y está limitado a 5 cuentas por hora por conexión.
+La extracción del directorio corre sola al arrancar y cada día. Un dueño o un administrador puede
+pedir una manual desde **Actividad IA**, como máximo cada 30 minutos. El registro no verifica el correo y está limitado a 5 cuentas por hora por conexión.
 
 ### Funciones que requieren credenciales
 
@@ -59,6 +86,7 @@ sola. El registro no verifica el correo y está limitado a 5 cuentas por hora po
 | Detección y extracción con Gemini | `GEMINI_API_KEY` | El video funciona, pero no hay detección ni extracción |
 | Alertas por WhatsApp | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | El aviso falla de forma visible y se puede reintentar |
 | Web Push | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No aparece la opción de notificaciones |
+| Cámaras Imou por su nube | `IMOU_APP_ID`, `IMOU_APP_SECRET`, `IMOU_API_URL` | Solo se pueden usar cámaras `rtsp://` |
 
 ### Plantilla de WhatsApp
 
@@ -72,6 +100,19 @@ Mensaje confirmado por el personal del local.
 ```
 
 Acuerda con el CAI el uso de su número antes de registrarlo.
+
+### Cámara Imou sin acceso por la red local
+
+Si el servidor de Bandit no alcanza la cámara por la red, Bandit puede pedir el video a la nube de
+Imou. Crea una aplicación en [open.imoulife.com](https://open.imoulife.com) con la misma cuenta de
+Imou Life y copia su **App ID** y **App Secret** en `IMOU_APP_ID` e `IMOU_APP_SECRET`. En
+`IMOU_API_URL` usa el centro de datos de tu cuenta: `openapi-or` para América, `openapi-fk` para
+Europa u `openapi-sg` para Asia.
+
+En **Cámaras** registra `imou://<número de serie>/<canal>?stream=1`. El número de serie está en la
+etiqueta y en Imou Life. Para una cámara de dos lentes, registra una cámara por canal (`0` y `1`).
+`stream=1` es la calidad ligera, suficiente para Gemini; `stream=0` es la alta. El video llega por
+internet con unos segundos de retraso y consume la cuota de tu aplicación en Imou.
 
 ### Cámara que solo responde a otro equipo
 
@@ -87,6 +128,15 @@ El script descarga MediaMTX, pide la IP y el código de la cámara sin mostrarlo
 de solo lectura. Al terminar imprime dos URL, `rtsp://bandit:<clave>@<ip-del-puente>:8554/lente1` y
 `/lente2`. Regístralas en **Cámaras** como dos cámaras. El puente debe quedar encendido; si se
 apaga, Bandit marca la cámara como caída y reintenta.
+
+### Panel de actividad de la IA
+
+**Actividad IA** muestra, por cámara, el último fotograma que analizó Gemini, el nivel de
+movimiento, su última respuesta (situación, confianza, severidad y descripción) y cuántas
+detecciones seguidas lleva antes de alertar. También muestra las consultas del día frente al tope
+y la galería de los más buscados con el estado de la última extracción. El fotograma analizado solo
+vive en memoria. La extracción corre sola al arrancar si el directorio está vacío o es viejo, y un
+dueño puede pedir una manual cada 30 minutos.
 
 ## Arquitectura
 

@@ -58,11 +58,11 @@ export default function CamerasPage() {
             <form className={styles.formulario} onSubmit={add}>
               <Field label="Nombre" name="name" placeholder="Barra principal" required />
               <Field
-                label="Dirección RTSP"
+                label="Dirección de la cámara"
                 name="url"
                 type="password"
                 autoComplete="off"
-                hint="Empieza por rtsp://. Se guarda cifrada y no se vuelve a mostrar."
+                hint="rtsp:// en la red local, o imou://<número de serie>/<canal>?stream=1 para una cámara Imou por su nube. Se guarda cifrada y no se vuelve a mostrar."
                 required
                 error={error}
               />

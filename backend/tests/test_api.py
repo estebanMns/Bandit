@@ -1,6 +1,7 @@
 """Pruebas de punta a punta de la capa HTTP: sesión, CSRF, permisos y secretos."""
 
 import asyncio
+import time
 from collections.abc import Iterator
 from pathlib import Path
 from uuid import uuid4
@@ -385,4 +386,92 @@ def test_owner_has_no_global_powers(client: TestClient) -> None:
         ).status_code
         == 403
     )
-    assert client.post("/api/directory/sync", headers=headers).status_code == 403
+
+
+def test_activity_panel_starts_empty_for_the_owner(client: TestClient) -> None:
+    register(client, "panel@example.com")
+    local = only_local(client)
+
+    response = client.get(f"/api/establishments/{local}/analysis-activity")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["cameras"] == []
+    assert body["budget"]["used"] == 0
+    assert body["model_enabled"] is False
+
+
+def test_activity_panel_is_private_to_each_local(client: TestClient) -> None:
+    register(client, "uno@example.com", "Uno")
+    first = only_local(client)
+    register(client, "dos@example.com", "Dos")
+
+    assert client.get(f"/api/establishments/{first}/analysis-activity").status_code == 403
+    assert client.get(f"/api/analysis/cameras/{uuid4()}/last-frame").status_code == 404
+
+
+def wait_for_idle_directory(client: TestClient) -> dict[str, object]:
+    for _ in range(50):
+        status = client.get("/api/directory/sync-runs").json()
+        if not status["running"]:
+            return status
+        time.sleep(0.05)
+    raise AssertionError("La extracción no terminó")
+
+
+def test_directory_extraction_runs_at_startup_and_limits_manual_runs(
+    client: TestClient,
+) -> None:
+    headers = register(client, "dueno-directorio@example.com")
+
+    status = wait_for_idle_directory(client)
+    assert [run["trigger"] for run in status["runs"]] == ["startup"]
+    assert client.post("/api/directory/sync", headers=headers).status_code == 429
+
+
+def test_directory_status_requires_a_session(client: TestClient) -> None:
+    assert client.get("/api/directory/sync-runs").status_code == 401
+
+
+def demo_client(tmp_path: Path, demo: bool) -> TestClient:
+    url = f"sqlite+aiosqlite:///{tmp_path / 'demo.db'}"
+    settings = Settings(
+        _env_file=None,
+        database_url=url,
+        camera_encryption_key=Fernet.generate_key().decode(),
+        ffmpeg_path="ffmpeg-inexistente",
+        media_root=str(tmp_path),
+        demo_admin=demo,
+    )
+    if not (tmp_path / "demo.db").exists():
+        asyncio.run(_create_schema(url))
+    return TestClient(create_app(settings))
+
+
+def demo_login(client: TestClient) -> int:
+    return client.post("/api/auth/login", json={"email": "admin", "password": "admin"}).status_code
+
+
+def test_demo_account_exists_only_while_enabled(tmp_path: Path) -> None:
+    with demo_client(tmp_path, demo=True) as client:
+        assert client.get("/api/auth/options").json() == {"demo": True}
+        assert demo_login(client) == 200
+        assert client.get("/api/auth/me").json()["role"] == "admin"
+
+    with demo_client(tmp_path, demo=False) as client:
+        assert client.get("/api/auth/options").json() == {"demo": False}
+        assert demo_login(client) == 401
+
+
+def test_open_registration_still_requires_long_passwords(tmp_path: Path) -> None:
+    with demo_client(tmp_path, demo=True) as client:
+        response = client.post(
+            "/api/auth/register",
+            json={
+                "email": "corta@example.com",
+                "password": "admin",
+                "local_name": "Bar",
+                "local_address": "Calle 1",
+            },
+        )
+        assert response.status_code == 422

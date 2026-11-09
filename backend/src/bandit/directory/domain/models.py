@@ -4,6 +4,7 @@ import re
 import unicodedata
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import StrEnum
 from uuid import UUID
 
 
@@ -61,3 +62,24 @@ class SyncReport:
     rejected: int
     retired: int
     completed: bool
+
+
+class SyncTrigger(StrEnum):
+    STARTUP = "startup"
+    SCHEDULED = "scheduled"
+    MANUAL = "manual"
+
+
+@dataclass(slots=True)
+class SyncRun:
+    """Una corrida de extracción: cuándo, por qué y qué resultó."""
+
+    id: UUID
+    trigger: SyncTrigger
+    started_at: datetime
+    finished_at: datetime | None = None
+    published: int = 0
+    rejected: int = 0
+    retired: int = 0
+    completed: bool = False
+    error: str | None = None

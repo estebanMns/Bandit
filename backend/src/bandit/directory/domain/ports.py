@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from bandit.directory.domain.models import ExtractedRecord, WantedRecord
+from bandit.directory.domain.models import ExtractedRecord, SyncRun, WantedRecord
 
 
 class WantedRepository(Protocol):
@@ -11,6 +11,12 @@ class WantedRepository(Protocol):
     async def get_active(self, slug: str) -> WantedRecord | None: ...
 
     async def upsert(self, record: WantedRecord) -> None: ...
+
+
+class SyncRunRepository(Protocol):
+    async def save(self, run: SyncRun) -> None: ...
+
+    async def latest(self, limit: int) -> list[SyncRun]: ...
 
 
 class PageFetcher(Protocol):

@@ -3,13 +3,14 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 from uuid import UUID
 
 from bandit.shared.errors import InvalidDataError
 from bandit.shared.events import DomainEvent
 
-_ALLOWED_SCHEMES = {"rtsp", "rtsps"}
+_RTSP_SCHEMES = {"rtsp", "rtsps"}
+IMOU_SCHEME = "imou"
 
 
 class CameraStatus(StrEnum):
@@ -20,10 +21,21 @@ class CameraStatus(StrEnum):
 
 
 def validate_stream_url(url: str) -> str:
-    parts = urlsplit(url.strip())
-    if parts.scheme.lower() not in _ALLOWED_SCHEMES or not parts.hostname:
-        raise InvalidDataError("La URL debe empezar por rtsp:// o rtsps:// e incluir un host")
-    return url.strip()
+    """Acepta RTSP directo o una cámara Imou por su nube: imou://<serie>/<canal>?stream=0|1."""
+    cleaned = url.strip()
+    parts = urlsplit(cleaned)
+    scheme = parts.scheme.lower()
+    if scheme in _RTSP_SCHEMES and parts.hostname:
+        return cleaned
+    if scheme == IMOU_SCHEME:
+        channel = parts.path.strip("/")
+        stream = parse_qs(parts.query).get("stream", ["1"])[0]
+        if parts.netloc.isalnum() and channel.isdigit() and stream in {"0", "1"}:
+            return cleaned
+        raise InvalidDataError(
+            "Para Imou usa imou://<número de serie>/<canal>?stream=1 (1 ligera, 0 alta)"
+        )
+    raise InvalidDataError("La URL debe empezar por rtsp://, rtsps:// o imou://")
 
 
 @dataclass(slots=True)

@@ -20,7 +20,7 @@ async function shot(page: Page, name: string, fullPage = true) {
 
 async function login(page: Page) {
   await page.goto("/ingresar");
-  await page.getByLabel("Correo").fill(ADMIN_EMAIL);
+  await page.getByLabel("Correo o usuario").fill(ADMIN_EMAIL);
   await page.getByLabel("Clave").fill(ADMIN_PASSWORD);
   await page.getByRole("button", { name: "Ingresar" }).click();
   await page.waitForURL("**/monitor");
@@ -56,7 +56,7 @@ test("las pantallas cumplen WCAG 2 AA", async ({ page }) => {
     await expectAccessible(page, path);
   }
   await login(page);
-  for (const path of ["/monitor", "/incidentes", "/ajustes/camaras", "/ajustes/local"]) {
+  for (const path of ["/monitor", "/actividad", "/incidentes", "/ajustes/camaras", "/ajustes/local"]) {
     await page.goto(path);
     // El video mantiene la red ocupada: se espera a que la pantalla cargue sus datos.
     await page.waitForTimeout(1_500);
@@ -70,14 +70,14 @@ test("una persona nueva se registra, sale y vuelve a entrar", async ({ page }) =
 
   await page.goto("/");
   await page.getByRole("link", { name: "Crear cuenta" }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Crea tu cuenta");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Registra tu local");
   await shot(page, "registro-escritorio");
   await page.setViewportSize(MOBILE);
   await shot(page, "registro-movil");
   await page.setViewportSize({ width: 1440, height: 900 });
 
   await page.getByLabel("Nombre del local").fill("Restaurante de prueba");
-  await page.getByLabel("Dirección").fill("Carrera 5 # 10-20, Neiva");
+  await page.getByLabel("Dirección", { exact: true }).fill("Carrera 5 # 10-20, Neiva");
   await page.getByLabel("Correo").fill(email);
   await page.getByLabel("Clave", { exact: true }).fill(password);
   await page.getByLabel("Repite la clave").fill("otra-clave-distinta");
@@ -97,7 +97,7 @@ test("una persona nueva se registra, sale y vuelve a entrar", async ({ page }) =
   await page.goto("/monitor");
   await page.waitForURL("**/ingresar");
 
-  await page.getByLabel("Correo").fill(email);
+  await page.getByLabel("Correo o usuario").fill(email);
   await page.getByLabel("Clave").fill(password);
   await page.getByRole("button", { name: "Ingresar" }).click();
   await page.waitForURL("**/monitor");
@@ -105,9 +105,9 @@ test("una persona nueva se registra, sale y vuelve a entrar", async ({ page }) =
 
   await page.getByRole("button", { name: "Salir" }).click();
   await page.waitForURL("**/ingresar");
-  await page.getByRole("link", { name: "Crea una cuenta" }).click();
+  await page.getByRole("link", { name: /Crear una cuenta/ }).click();
   await page.getByLabel("Nombre del local").fill("Otro local");
-  await page.getByLabel("Dirección").fill("Calle 1");
+  await page.getByLabel("Dirección", { exact: true }).fill("Calle 1");
   await page.getByLabel("Correo").fill(email);
   await page.getByLabel("Clave", { exact: true }).fill(password);
   await page.getByLabel("Repite la clave").fill(password);
@@ -134,7 +134,7 @@ test("configura el local, la cámara y el video en vivo", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 2 }).first()).toBeVisible();
   if (await page.getByRole("heading", { name: "Registra tu local" }).isVisible()) {
     await page.getByLabel("Nombre").fill("Bar La Esquina");
-    await page.getByLabel("Dirección").fill("Calle 10 # 5-20, Neiva");
+    await page.getByLabel("Dirección", { exact: true }).fill("Calle 10 # 5-20, Neiva");
     await page.getByRole("button", { name: "Registrar local" }).click();
   }
 
@@ -226,4 +226,27 @@ test("directorio y copia sin conexión", async ({ page, context }) => {
   await page.goto("/guia").catch(() => undefined);
   await expect(page.getByRole("heading", { name: "No hay conexión" })).toBeVisible();
   await context.setOffline(false);
+});
+
+test("el panel de actividad muestra el modelo, el presupuesto y el directorio", async ({ page }) => {
+  await login(page);
+  await page.goto("/actividad");
+
+  await expect(page.getByRole("heading", { name: "Actividad de la IA" })).toBeVisible();
+  await expect(page.getByText(/de \d+/).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Los más buscados" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /extracción|Gemini/ })).toBeVisible();
+  await shot(page, "actividad");
+});
+
+test("la cuenta de prueba admin/admin entra cuando DEMO_ADMIN está activo", async ({ page }) => {
+  test.skip(process.env.E2E_DEMO !== "1", "Requiere DEMO_ADMIN=true en el servidor");
+  await page.goto("/ingresar");
+  await expect(page.getByRole("note")).toContainText("Modo de prueba");
+  await page.getByLabel("Correo o usuario").fill("admin");
+  await page.getByLabel("Clave").fill("admin");
+  await page.getByRole("button", { name: "Mostrar" }).click();
+  await expect(page.getByLabel("Clave")).toHaveAttribute("type", "text");
+  await page.getByRole("button", { name: "Ingresar" }).click();
+  await page.waitForURL("**/monitor");
 });

@@ -7,7 +7,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from bandit.analysis.domain.models import SituationDetected
+from bandit.analysis.domain.models import AnalysisActivity, SituationDetected
 from bandit.analysis.domain.ports import SceneAnalyzer
 from bandit.analysis.infrastructure.gemini_analyzer import (
     DisabledSceneAnalyzer,
@@ -18,6 +18,8 @@ from bandit.cameras.domain.models import CameraStatusChanged
 from bandit.cameras.infrastructure import tables as camera_tables  # noqa: F401
 from bandit.cameras.infrastructure.fernet_cipher import FernetUrlCipher
 from bandit.cameras.infrastructure.ffmpeg_source import FfmpegFrameSource
+from bandit.cameras.infrastructure.imou_cloud import ImouCloudResolver
+from bandit.cameras.infrastructure.resolving_source import ResolvingFrameSource
 from bandit.cameras.module import CamerasModule
 from bandit.directory.domain.ports import DirectoryAgent
 from bandit.directory.infrastructure import tables as directory_tables  # noqa: F401
@@ -105,6 +107,7 @@ def _wire_events(bus: EventBus, app: Application) -> None:
 
     bus.subscribe(CameraStatusChanged, app.analysis.supervisor.on_camera_status)
     bus.subscribe(CameraStatusChanged, live.on_camera_status)
+    bus.subscribe(AnalysisActivity, live.on_analysis_activity)
     bus.subscribe(SituationDetected, app.incidents.record_situation.execute_event)
     bus.subscribe(IncidentChanged, live.on_incident_changed)
     bus.subscribe(IncidentChanged, app.notifications.push_new_incident.execute)
@@ -127,10 +130,16 @@ def build_application(settings: Settings) -> Application:
         timedelta(hours=settings.session_ttl_hours),
         settings.cookie_secure,
         _EstablishmentCreator(establishments),
+        settings.demo_admin,
     )
     cameras = CamerasModule(
         sessions,
-        FfmpegFrameSource(settings.ffmpeg_path, settings.video_fps, settings.video_width),
+        ResolvingFrameSource(
+            FfmpegFrameSource(settings.ffmpeg_path, settings.video_fps, settings.video_width),
+            ImouCloudResolver(
+                settings.imou_app_id, settings.imou_app_secret, settings.imou_api_url
+            ),
+        ),
         FernetUrlCipher(settings.camera_encryption_key),
         bus,
         clock,
@@ -167,6 +176,7 @@ def build_application(settings: Settings) -> Application:
         FileMediaStore(str(Path(settings.media_root) / "directory")),
         NextRevalidator(settings.frontend_internal_url, settings.revalidate_secret),
         clock,
+        timedelta(hours=settings.directory_scrape_interval_hours),
     )
     application = Application(
         engine=engine,

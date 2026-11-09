@@ -1,4 +1,4 @@
-"""Fuente de fotogramas RTSP con ffmpeg como subproceso asíncrono."""
+"""Fuente de fotogramas RTSP o HLS con ffmpeg como subproceso asíncrono."""
 
 import asyncio
 from collections.abc import AsyncIterator
@@ -16,12 +16,13 @@ class FfmpegFrameSource:
         self._width = width
 
     def _arguments(self, url: str) -> list[str]:
+        # TCP evita fotogramas rotos en RTSP; HLS ya viaja por HTTP.
+        transport = ["-rtsp_transport", "tcp"] if url.lower().startswith("rtsp") else []
         return [
             "-hide_banner",
             "-loglevel",
             "error",
-            "-rtsp_transport",
-            "tcp",
+            *transport,
             "-i",
             url,
             "-an",

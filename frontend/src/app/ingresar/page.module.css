@@ -1,35 +1,57 @@
-.pagina {
-  display: grid;
-  align-content: center;
-  gap: var(--e-4);
-  width: min(100% - 2 * var(--e-6), 28rem);
-  min-height: 100dvh;
-  margin-inline: auto;
-}
-
-.titulo {
-  font-size: var(--t-2xl);
-  font-stretch: 125%;
-  font-weight: 800;
-}
-
-.bajada {
-  color: var(--texto-tenue);
-}
+/* Formularios de acceso, sobre el papel claro de AuthLayout. */
 
 .formulario {
   display: grid;
   gap: var(--e-4);
-  margin-top: var(--e-4);
 }
 
-.alterno {
+.principal {
+  width: 100%;
+  margin-top: var(--e-2);
+}
+
+.separador {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  margin: var(--e-2) 0;
   color: var(--texto-tenue);
+  font-size: var(--t-sm);
 }
 
-.alterno a {
-  color: var(--sodio);
+.separador::before,
+.separador::after {
+  flex: 1;
+  border-top: 1px solid var(--borde);
+  content: "";
+}
+
+.secundario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-2);
+  min-height: 44px;
+  padding: var(--e-2) var(--e-6);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-control);
+  background: var(--superficie);
+  color: var(--texto);
+  font-family: var(--fuente-titulo);
   font-weight: 700;
+  text-decoration: none;
+  transition: border-color 160ms var(--curva);
+}
+
+.secundario:hover {
+  border-color: var(--texto);
+}
+
+.aviso {
+  padding: var(--e-3) var(--e-4);
+  border-left: 3px solid var(--foco);
+  background: var(--superficie);
+  font-size: var(--t-sm);
 }
 
 .grupo {
@@ -45,10 +67,11 @@
   padding: 0;
   font-family: var(--fuente-titulo);
   font-size: var(--t-lg);
-  font-stretch: 112%;
   font-weight: 700;
 }
 
-.registro {
-  padding-block: var(--e-8);
+@media (prefers-reduced-motion: reduce) {
+  .secundario {
+    transition: none;
+  }
 }

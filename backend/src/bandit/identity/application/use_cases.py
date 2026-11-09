@@ -105,6 +105,45 @@ class BootstrapAdmin:
             await self._register.execute(email, password, Role.ADMIN)
 
 
+DEMO_USERNAME = "admin"
+DEMO_PASSWORD = "admin"  # noqa: S105  Clave de prueba a propósito; solo con DEMO_ADMIN=true.
+
+
+class SyncDemoAdmin:
+    """Cuenta admin/admin solo para pruebas. Con el modo apagado, la cuenta deja de existir.
+
+    El registro exige un correo válido, así que "admin" nunca puede ser una cuenta real.
+    """
+
+    def __init__(self, users: UserRepository, hasher: PasswordHasher) -> None:
+        self._users = users
+        self._hasher = hasher
+
+    async def execute(self, enabled: bool) -> None:
+        existing = await self._users.get_by_email(DEMO_USERNAME)
+        if not enabled:
+            if existing is not None:
+                await self._users.delete(existing.id)
+            return
+        password_hash = self._hasher.hash(DEMO_PASSWORD)
+        if existing is None:
+            await self._users.add(
+                User(
+                    id=uuid4(),
+                    email=DEMO_USERNAME,
+                    password_hash=password_hash,
+                    role=Role.ADMIN,
+                    establishment_id=None,
+                )
+            )
+        elif existing.role is not Role.ADMIN:
+            # Con ese nombre solo puede existir la cuenta de prueba: se rehace como admin.
+            await self._users.delete(existing.id)
+            await self.execute(enabled)
+        elif not self._hasher.verify(existing.password_hash, DEMO_PASSWORD):
+            await self._users.set_password(existing.id, password_hash)
+
+
 class Login:
     def __init__(
         self,

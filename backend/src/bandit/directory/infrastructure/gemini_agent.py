@@ -8,6 +8,7 @@ from google.genai import types
 
 from bandit.directory.domain.models import ExtractedRecord
 from bandit.directory.domain.ports import AgentTools
+from bandit.shared.gemini import http_options
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +110,10 @@ async def execute_tool(tools: AgentTools, name: str, arguments: dict[str, Any]) 
 
 class GeminiDirectoryAgent:
     def __init__(self, api_key: str, model: str) -> None:
-        self._client = genai.Client(api_key=api_key)
+        # La extracción no tiene prisa: mejor esperar que perder la corrida entera.
+        self._client = genai.Client(
+            api_key=api_key, http_options=http_options(attempts=6, max_delay=60)
+        )
         self._model = model
         self._config = types.GenerateContentConfig(
             system_instruction=SYSTEM_INSTRUCTION,

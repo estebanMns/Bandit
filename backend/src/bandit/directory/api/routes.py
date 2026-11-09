@@ -7,9 +7,9 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from bandit.directory.domain.models import SyncReport, WantedRecord
+from bandit.directory.domain.models import SyncRun, WantedRecord
 from bandit.directory.module import DirectoryModule
-from bandit.identity.public import AdminUser, require_csrf
+from bandit.identity.public import CurrentUser, ManagerUser, require_csrf
 from bandit.shared.errors import NotFoundError
 
 router = APIRouter(prefix="/api/directory", tags=["directory"])
@@ -63,20 +63,33 @@ class WantedResponse(BaseModel):
         )
 
 
-class SyncResponse(BaseModel):
+class SyncRunResponse(BaseModel):
+    trigger: str
+    started_at: datetime
+    finished_at: datetime | None
     published: int
     rejected: int
     retired: int
     completed: bool
+    error: str | None
 
     @classmethod
-    def of(cls, report: SyncReport) -> "SyncResponse":
+    def of(cls, run: SyncRun) -> "SyncRunResponse":
         return cls(
-            published=report.published,
-            rejected=report.rejected,
-            retired=report.retired,
-            completed=report.completed,
+            trigger=run.trigger.value,
+            started_at=run.started_at,
+            finished_at=run.finished_at,
+            published=run.published,
+            rejected=run.rejected,
+            retired=run.retired,
+            completed=run.completed,
+            error=run.error,
         )
+
+
+class SyncStatusResponse(BaseModel):
+    running: bool
+    runs: list[SyncRunResponse]
 
 
 @router.get("")
@@ -84,9 +97,23 @@ async def list_wanted(module: Module) -> list[WantedResponse]:
     return [WantedResponse.of(record) for record in await module.list_active.execute()]
 
 
-@router.post("/sync", dependencies=[Depends(require_csrf)])
-async def sync_directory(_: AdminUser, module: Module) -> SyncResponse:
-    return SyncResponse.of(await module.sync.execute())
+@router.post("/sync", status_code=202, dependencies=[Depends(require_csrf)])
+async def sync_directory(_: ManagerUser, module: Module) -> SyncStatusResponse:
+    """Arranca en segundo plano: la extracción puede tardar varios minutos."""
+    await module.runner.start_manual()
+    return await sync_status(module)
+
+
+@router.get("/sync-runs")
+async def sync_runs(_: CurrentUser, module: Module) -> SyncStatusResponse:
+    return await sync_status(module)
+
+
+async def sync_status(module: DirectoryModule) -> SyncStatusResponse:
+    return SyncStatusResponse(
+        running=module.runner.running,
+        runs=[SyncRunResponse.of(run) for run in await module.runner.latest()],
+    )
 
 
 @router.get("/media/{name}")
