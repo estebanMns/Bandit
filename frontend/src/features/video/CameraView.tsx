@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { StreamState } from "./protocol";
 import { useVideoStream } from "./useVideoStream";
 import styles from "./CameraView.module.css";
@@ -16,24 +16,46 @@ interface CameraViewProps {
   name: string;
   featured?: boolean;
   onSelect?: () => void;
+  /** Sin el pie propio: quien lo usa pone sus etiquetas encima, como el centro de control. */
+  bare?: boolean;
+  /** Avisa el estado y los fotogramas por segundo, para la telemetría. */
+  onMetrics?: (metrics: { live: boolean; fps: number }) => void;
 }
 
-export function CameraView({ cameraId, name, featured = false, onSelect }: CameraViewProps) {
+export function CameraView({
+  cameraId,
+  name,
+  featured = false,
+  onSelect,
+  bare = false,
+  onMetrics,
+}: CameraViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { state, fps } = useVideoStream(cameraId, canvasRef);
 
+  useEffect(() => {
+    onMetrics?.({ live: state === "en-vivo", fps });
+  }, [onMetrics, state, fps]);
+
   const content = (
     <>
-      <canvas ref={canvasRef} className={styles.lienzo} role="img" aria-label={`Video de ${name}`} />
+      <canvas
+        ref={canvasRef}
+        className={styles.lienzo}
+        role="img"
+        aria-label={`Video de ${name}`}
+      />
       {state !== "en-vivo" && <p className={styles.aviso}>{STATE_LABEL[state]}</p>}
-      <div className={styles.pie}>
-        <span className={styles.nombre}>{name}</span>
-        <span className={styles.estado} data-estado={state}>
-          <span aria-hidden="true" className={styles.marca} />
-          {STATE_LABEL[state]}
-          {featured && state === "en-vivo" && fps > 0 ? ` a ${fps} fps` : ""}
-        </span>
-      </div>
+      {!bare && (
+        <div className={styles.pie}>
+          <span className={styles.nombre}>{name}</span>
+          <span className={styles.estado} data-estado={state}>
+            <span aria-hidden="true" className={styles.marca} />
+            {STATE_LABEL[state]}
+            {featured && state === "en-vivo" && fps > 0 ? ` a ${fps} fps` : ""}
+          </span>
+        </div>
+      )}
     </>
   );
 
