@@ -129,6 +129,26 @@ de solo lectura. Al terminar imprime dos URL, `rtsp://bandit:<clave>@<ip-del-pue
 `/lente2`. Regístralas en **Cámaras** como dos cámaras. El puente debe quedar encendido; si se
 apaga, Bandit marca la cámara como caída y reintenta.
 
+### Primeros pasos y búsqueda de cámaras
+
+Al registrarse, o al entrar sin local o sin cámaras, Bandit abre `/empezar`, un asistente de cuatro
+pasos: el local, el WhatsApp del CAI, las cámaras y listo. En el paso de cámaras, **Buscar cámaras en
+mi red** revisa tu Wi-Fi (solo redes privadas de hasta 256 direcciones). Prueba las rutas de video
+conocidas de cada marca con la clave que escribes y, si ninguna funciona, le pide a Gemini otras rutas
+para probar. Gemini solo recibe la marca, los puertos y las cabeceras, nunca la clave. La URL se arma
+en tu navegador y se guarda cifrada.
+
+### Directorio por prioridad
+
+El directorio muestra primero a quien tiene la recompensa más alta publicada por la Policía, luego
+según la gravedad del delito publicado (una lista fija y visible: homicidio; secuestro, extorsión o
+terrorismo; delito sexual; tráfico, armas o concierto para delinquir; hurto u otros) y luego en el
+orden de la página de la Policía. Bandit no califica a las personas.
+
+Si `GEMINI_MODEL` se queda sin cuota (error `429 RESOURCE_EXHAUSTED`), define
+`GEMINI_DIRECTORY_MODEL`, por ejemplo `gemini-3.5-flash`, para extraer el directorio con otro modelo.
+El panel **Actividad IA** muestra el error exacto de cada extracción.
+
 ### Panel de actividad de la IA
 
 **Actividad IA** muestra, por cámara, el último fotograma que analizó Gemini, el nivel de
