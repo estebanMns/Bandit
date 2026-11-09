@@ -67,6 +67,7 @@ class SyncReport:
     retired: int
     completed: bool
     pages_failed: int = 0
+    error: str | None = None
 
 
 class SyncTrigger(StrEnum):
