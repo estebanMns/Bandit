@@ -7,7 +7,10 @@
 }
 
 .escena {
-  position: relative;
+  /* En formularios largos la escena queda fija y solo se desplaza el formulario. */
+  position: sticky;
+  top: 0;
+  height: 100dvh;
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: var(--e-8);
@@ -159,6 +162,8 @@
   }
 
   .escena {
+    position: relative;
+    height: auto;
     gap: var(--e-4);
     padding: var(--e-6);
   }
