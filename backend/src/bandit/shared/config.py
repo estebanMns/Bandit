@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     imou_app_secret: str = ""
     imou_api_url: str = "https://openapi-or.easy4ip.com/openapi"
 
+    # OpenStreetMap: geocodificación, CAI cercanos y mosaicos del mapa. Sus políticas de uso
+    # piden un User-Agent que identifique la aplicación.
+    osm_user_agent: str = "Bandit/1.0 (vigilancia para bares y restaurantes)"
+
 
 @lru_cache
 def get_settings() -> Settings:

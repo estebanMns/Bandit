@@ -76,3 +76,50 @@
   --campo-fondo: color-mix(in srgb, var(--noche) 70%, black);
   --error: var(--baliza);
 }
+
+/* Centro de control: consola casi negra con acento azul y paneles de vidrio líquido. */
+[data-tema="centinela"] {
+  --fondo: #070b11;
+  --superficie: rgb(22 33 48 / 55%);
+  --superficie-solida: #111a25;
+  --borde: rgb(255 255 255 / 9%);
+  --brillo: rgb(255 255 255 / 14%);
+  --texto: #e6edf4;
+  --texto-tenue: #a3b3c3;
+  --accion: #4096ff;
+  --sobre-accion: #04101f;
+  --foco: #56b4ff;
+  --campo-fondo: rgb(5 10 17 / 70%);
+  --error: #ff7a7c;
+  --ok: #35d6a4;
+  --sev-critico: #ff6466;
+  --sev-alto: #fa8c16;
+  --sev-medio: #faad14;
+  --sev-bajo: #56b4ff;
+  --luz-a: rgb(64 150 255 / 30%);
+  --luz-b: rgb(53 214 164 / 18%);
+  --fuente-cifras: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+[data-tema="centinela-claro"] {
+  --fondo: #e9eff6;
+  --superficie: rgb(255 255 255 / 58%);
+  --superficie-solida: #ffffff;
+  --borde: rgb(16 40 70 / 12%);
+  --brillo: rgb(255 255 255 / 85%);
+  --texto: #0b1726;
+  --texto-tenue: #3f5166;
+  --accion: #1559c9;
+  --sobre-accion: #ffffff;
+  --foco: #1559c9;
+  --campo-fondo: #ffffff;
+  --error: #b3123a;
+  --ok: #0b7a59;
+  --sev-critico: #b8161a;
+  --sev-alto: #a24f00;
+  --sev-medio: #7a5600;
+  --sev-bajo: #1559c9;
+  --luz-a: rgb(64 150 255 / 28%);
+  --luz-b: rgb(53 214 164 / 24%);
+  --fuente-cifras: var(--font-plex-mono), ui-monospace, monospace;
+}

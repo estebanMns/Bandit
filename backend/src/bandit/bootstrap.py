@@ -37,6 +37,7 @@ from bandit.directory.infrastructure.next_revalidator import NextRevalidator
 from bandit.directory.infrastructure.polite_fetcher import PoliteFetcher
 from bandit.directory.module import DirectoryModule
 from bandit.establishments.infrastructure import tables as establishment_tables  # noqa: F401
+from bandit.establishments.infrastructure.nominatim import NominatimGeocoder
 from bandit.establishments.module import EstablishmentsModule
 from bandit.identity.infrastructure import tables as identity_tables  # noqa: F401
 from bandit.identity.module import IdentityModule
@@ -49,6 +50,11 @@ from bandit.notifications.infrastructure import tables as notification_tables  #
 from bandit.notifications.infrastructure.web_push import VapidPushSender
 from bandit.notifications.infrastructure.whatsapp_cloud import WhatsAppCloudSender
 from bandit.notifications.module import NotificationsModule
+from bandit.places.infrastructure.fallback import FirstAvailableStations
+from bandit.places.infrastructure.nominatim_police import NominatimPoliceStations
+from bandit.places.infrastructure.osm_tiles import CachedOsmTiles
+from bandit.places.infrastructure.overpass import OverpassPoliceStations
+from bandit.places.module import PlacesModule
 from bandit.realtime.application.event_hub import EventHub
 from bandit.realtime.application.translators import LiveEventPublisher
 from bandit.shared.background import BackgroundTasks
@@ -68,6 +74,7 @@ class Application:
     incidents: IncidentsModule
     notifications: NotificationsModule
     directory: DirectoryModule
+    places: PlacesModule
     event_hub: EventHub
     background: BackgroundTasks
 
@@ -142,7 +149,7 @@ def build_application(settings: Settings) -> Application:
     clock = SystemClock()
     bus = InMemoryEventBus()
 
-    establishments = EstablishmentsModule(sessions)
+    establishments = EstablishmentsModule(sessions, NominatimGeocoder(settings.osm_user_agent))
     identity = IdentityModule(
         sessions,
         clock,
@@ -207,6 +214,15 @@ def build_application(settings: Settings) -> Application:
         incidents=incidents,
         notifications=notifications,
         directory=directory,
+        places=PlacesModule(
+            FirstAvailableStations(
+                [
+                    NominatimPoliceStations(settings.osm_user_agent),
+                    OverpassPoliceStations(settings.osm_user_agent),
+                ]
+            ),
+            CachedOsmTiles(str(Path(settings.media_root) / "tiles"), settings.osm_user_agent),
+        ),
         event_hub=EventHub(),
         background=BackgroundTasks(),
     )

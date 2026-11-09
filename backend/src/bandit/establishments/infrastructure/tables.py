@@ -15,3 +15,5 @@ class EstablishmentRow(Base):
     name: Mapped[str] = mapped_column(String(200))
     address: Mapped[str] = mapped_column(String(300))
     cai_whatsapp: Mapped[str | None] = mapped_column(String(16))
+    latitude: Mapped[float | None]
+    longitude: Mapped[float | None]

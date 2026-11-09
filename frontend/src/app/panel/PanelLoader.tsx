@@ -2,8 +2,8 @@
 
 import dynamic from "next/dynamic";
 
-/** CSR puro: el panel muestra video, que depende de Workers, canvas y SharedArrayBuffer. */
+/** CSR puro: el centro de control muestra video (Workers, canvas, SharedArrayBuffer) y un mapa. */
 export const PanelLoader = dynamic(
-  () => import("./PanelClient").then((module) => module.PanelClient),
+  () => import("@/features/control/ControlCenter").then((module) => module.ControlCenter),
   { ssr: false },
 );

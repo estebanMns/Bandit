@@ -25,12 +25,25 @@ class WhatsAppNumber:
         return cls(_SEPARATORS.sub("", raw))
 
 
+@dataclass(frozen=True, slots=True)
+class GeoPoint:
+    """Coordenadas WGS84 del local."""
+
+    latitude: float
+    longitude: float
+
+    def __post_init__(self) -> None:
+        if not (-90 <= self.latitude <= 90 and -180 <= self.longitude <= 180):
+            raise InvalidDataError("Las coordenadas no son válidas")
+
+
 @dataclass(slots=True)
 class Establishment:
     id: UUID
     name: str
     address: str
     cai_whatsapp: WhatsAppNumber | None = None
+    location: GeoPoint | None = None
 
     def __post_init__(self) -> None:
         if not self.name.strip():
