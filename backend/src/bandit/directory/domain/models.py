@@ -35,6 +35,8 @@ class ExtractedRecord:
     hotline_phones: tuple[str, ...]
     photo_url: str | None
     flyer_url: str | None
+    # Lo fija el código según el orden en la página de la Policía, no el modelo.
+    listing_position: int | None = None
 
 
 @dataclass(slots=True)
@@ -54,6 +56,8 @@ class WantedRecord:
     first_seen_at: datetime | None = None
     last_seen_at: datetime | None = None
     active: bool = True
+    reward_amount: int | None = None
+    listing_position: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +66,7 @@ class SyncReport:
     rejected: int
     retired: int
     completed: bool
+    pages_failed: int = 0
 
 
 class SyncTrigger(StrEnum):
@@ -83,3 +88,65 @@ class SyncRun:
     retired: int = 0
     completed: bool = False
     error: str | None = None
+    pages_failed: int = 0
+
+
+_AMOUNT = re.compile(r"(\d[\d.,]*)\s*(millones|millón|millon|mil)?", re.IGNORECASE)
+
+
+def parse_reward(text: str | None) -> int | None:
+    """Convierte la recompensa publicada en pesos: "10 millones" -> 10000000.
+
+    Devuelve None si no hay monto ("No Aplica", vacío o algo que no se entiende).
+    """
+    if not text:
+        return None
+    match = _AMOUNT.search(text)
+    if match is None:
+        return None
+    digits, unit = match.group(1), (match.group(2) or "").lower()
+    if unit:
+        # "1,5 millones" o "1.5 millones" es decimal; "1.500 millones" usa punto de miles.
+        if re.fullmatch(r"\d+[.,]\d{1,2}", digits):
+            number = float(digits.replace(",", "."))
+        else:
+            number = float(re.sub(r"[.,]", "", digits))
+        factor = 1_000 if unit == "mil" else 1_000_000
+        amount = int(number * factor)
+    else:
+        amount = int(re.sub(r"[.,]", "", digits))
+    return amount if amount > 0 else None
+
+
+# Gravedad del delito publicado, de mayor a menor. Es una lista fija y visible,
+# no una calificación de la persona: solo ordena lo que la Policía ya publicó.
+CRIME_LEVELS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("Homicidio", ("homicidio", "feminicidio", "asesinato", "masacre")),
+    ("Secuestro, extorsión o terrorismo", ("secuestro", "extorsion", "terrorismo", "rebelion")),
+    ("Delito sexual", ("sexual", "acceso carnal")),
+    (
+        "Tráfico, armas o concierto para delinquir",
+        ("trafico", "estupefacientes", "narcotrafico", "armas", "concierto para delinquir"),
+    ),
+    ("Hurto u otros", ("hurto", "robo", "lesiones", "estafa")),
+)
+
+
+def crime_level(crime: str | None) -> int:
+    """Posición en CRIME_LEVELS; los delitos sin dato o no listados van al final."""
+    if crime:
+        normalized = normalize_text(crime)
+        for level, (_, words) in enumerate(CRIME_LEVELS):
+            if any(word in normalized for word in words):
+                return level
+    return len(CRIME_LEVELS)
+
+
+def priority_key(record: WantedRecord) -> tuple[int, int, int, str]:
+    """Recompensa mayor primero, luego delito más grave, luego orden de la Policía."""
+    return (
+        -(record.reward_amount or 0),
+        crime_level(record.crime),
+        record.listing_position if record.listing_position is not None else 1_000_000,
+        record.name,
+    )
