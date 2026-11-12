@@ -127,7 +127,7 @@ export function CaiMap({ establishment, onLocated }: CaiMapProps) {
   const nearest = located ? (nearby?.places.slice(0, 3) ?? []) : [];
 
   return (
-    <section className={`${styles.vidrio} ${styles.panel}`} aria-labelledby="titulo-mapa">
+    <section className={`vidrio ${styles.panel}`} aria-labelledby="titulo-mapa">
       <div className={styles.panelCabecera}>
         <h2 id="titulo-mapa">Mapa · Pasto y CAI cercanos</h2>
         <span className={styles.tenue}>{located ? establishment.name : "Local sin ubicar"}</span>
