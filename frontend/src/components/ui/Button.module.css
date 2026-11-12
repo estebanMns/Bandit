@@ -36,6 +36,6 @@
 }
 
 .peligro {
-  background: var(--baliza);
-  color: var(--noche);
+  background: var(--sev-critico);
+  color: var(--sobre-peligro);
 }

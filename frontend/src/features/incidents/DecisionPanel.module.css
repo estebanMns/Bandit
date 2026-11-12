@@ -4,9 +4,12 @@
   flex-direction: column;
   gap: var(--e-3);
   align-self: start;
-  padding: var(--e-4);
+  padding: 16px 18px;
+  border: 1px solid var(--borde);
   border-left: 4px solid var(--borde);
+  border-radius: 16px;
   background: var(--superficie);
+  backdrop-filter: blur(18px) saturate(160%);
 }
 
 .calma {
@@ -19,7 +22,7 @@
 }
 
 .tenue a {
-  color: var(--sodio);
+  color: var(--accion);
 }
 
 .encabezado {
@@ -35,7 +38,7 @@
 }
 
 .encabezado[data-estado="detected"] h2 {
-  color: var(--baliza);
+  color: var(--sev-critico);
 }
 
 .evidencia {
@@ -52,7 +55,7 @@
 
 /* Más claro que Baliza: el texto pequeño debe llegar a 4.5:1 sobre el panel. */
 .error {
-  color: #ff9db4;
+  color: var(--error);
 }
 
 .acciones {
@@ -64,9 +67,9 @@
 .linea {
   display: block;
   padding: var(--e-3);
-  border: 2px solid var(--sodio);
+  border: 2px solid var(--accion);
   border-radius: var(--radio-control);
-  color: var(--sodio);
+  color: var(--accion);
   font-family: var(--fuente-titulo);
   font-size: var(--t-lg);
   font-stretch: 112%;
@@ -89,7 +92,7 @@
   gap: var(--e-4);
   width: min(100% - 2 * var(--e-4), 30rem);
   padding: var(--e-6);
-  border-top: 4px solid var(--baliza);
-  background: var(--asfalto);
+  border-top: 4px solid var(--sev-critico);
+  background: var(--superficie-solida);
   transform: translate(-50%, -50%);
 }

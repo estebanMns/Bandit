@@ -55,7 +55,7 @@ export function DirectoryPanel() {
   const last = status?.runs[0];
 
   return (
-    <section className={styles.seccion} aria-labelledby="titulo-directorio">
+    <section className={`vidrio ${styles.seccion}`} aria-labelledby="titulo-directorio">
       <div className={styles.encabezado}>
         <div>
           <h2 id="titulo-directorio">Los más buscados</h2>

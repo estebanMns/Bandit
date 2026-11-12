@@ -53,7 +53,7 @@ export default function LocalPage() {
         <h1 className={styles.titulo}>{current?.name ?? "Tu local"}</h1>
 
         {!loading && !current && (
-          <section className={styles.seccion}>
+          <section className={`vidrio ${styles.seccion}`}>
             <h2>Registra tu local</h2>
             <form className={styles.formulario} onSubmit={create}>
               <Field label="Nombre" name="name" required />
@@ -70,7 +70,7 @@ export default function LocalPage() {
         )}
 
         {current && (
-          <section className={styles.seccion}>
+          <section className={`vidrio ${styles.seccion}`}>
             <p className={styles.ayuda}>{current.address}</p>
             <h2>WhatsApp del CAI más cercano</h2>
             <p className={styles.ayuda}>

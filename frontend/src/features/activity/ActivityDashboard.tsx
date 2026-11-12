@@ -68,7 +68,7 @@ export function ActivityDashboard() {
 
       {snapshot && (
         <div className={styles.rejilla}>
-          <section className={styles.seccion} aria-labelledby="titulo-camaras">
+          <section className={`vidrio ${styles.seccion}`} aria-labelledby="titulo-camaras">
             <h2 id="titulo-camaras">Cámaras</h2>
             {snapshot.cameras.length === 0 ? (
               <p className={styles.detalle}>
@@ -87,7 +87,7 @@ export function ActivityDashboard() {
             )}
           </section>
 
-          <section className={styles.seccion} aria-labelledby="titulo-linea">
+          <section className={`vidrio ${styles.seccion}`} aria-labelledby="titulo-linea">
             <h2 id="titulo-linea">Últimos análisis</h2>
             <ActivityTimeline items={items} />
           </section>

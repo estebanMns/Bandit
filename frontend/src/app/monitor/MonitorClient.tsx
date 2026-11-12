@@ -52,7 +52,7 @@ export function MonitorClient() {
           </div>
         )}
         {featured && (
-          <section className={styles.principal} aria-label="Cámara seleccionada">
+          <section className={`vidrio ${styles.principal}`} aria-label="Cámara seleccionada">
             <CameraView key={featured.id} cameraId={featured.id} name={featured.name} featured />
           </section>
         )}
@@ -79,11 +79,13 @@ export function MonitorClient() {
           />
         )}
         {featured && (
-          <ShiftLine
-            incidents={incidents}
-            selectedId={decision?.id}
-            onSelect={setSelectedIncidentId}
-          />
+          <section className={`vidrio ${styles.turno}`} aria-label="Turno de hoy">
+            <ShiftLine
+              incidents={incidents}
+              selectedId={decision?.id}
+              onSelect={setSelectedIncidentId}
+            />
+          </section>
         )}
       </main>
     </AppShell>

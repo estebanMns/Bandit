@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from bandit.directory.application.sync_runner import DirectorySyncRunner
 from bandit.directory.application.use_cases import GetWanted, ListWanted, SyncDirectory
+from bandit.directory.domain.models import DEFAULT_SMLMV_COP
 from bandit.directory.domain.ports import (
     DirectoryAgent,
     MediaStore,
@@ -32,13 +33,14 @@ class DirectoryModule:
         revalidator: SiteRevalidator,
         clock: Clock,
         sync_interval: timedelta,
+        smlmv_cop: int = DEFAULT_SMLMV_COP,
     ) -> None:
         repository = SqlWantedRepository(sessions)
         self.media = media
         self.list_active = ListWanted(repository)
         self.get = GetWanted(repository)
         self.sync = SyncDirectory(
-            agent, fetcher, read_pdf_text, repository, media, revalidator, clock
+            agent, fetcher, read_pdf_text, repository, media, revalidator, clock, smlmv_cop
         )
         self.runner = DirectorySyncRunner(
             self.sync,

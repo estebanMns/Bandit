@@ -1,8 +1,9 @@
 .pagina {
   display: grid;
   gap: var(--e-6);
-  width: min(100% - 2 * var(--e-6), 60rem);
-  margin: var(--e-8) auto var(--e-12);
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
 }
 
 .titulo {
@@ -32,7 +33,7 @@
 }
 
 .fila:hover .situacion {
-  color: var(--sodio);
+  color: var(--accion);
 }
 
 .situacion {
@@ -47,15 +48,15 @@
 }
 
 .estado[data-estado="detected"] {
-  color: var(--baliza);
+  color: var(--sev-critico);
 }
 
 .estado[data-estado="notified"] {
-  color: var(--agua);
+  color: var(--ok);
 }
 
 .estado[data-estado="notification_failed"] {
-  color: var(--sodio);
+  color: var(--accion);
 }
 
 .detalle {

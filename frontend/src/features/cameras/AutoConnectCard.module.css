@@ -20,7 +20,7 @@
 }
 
 .nota {
-  color: var(--agua);
+  color: var(--ok);
   font-size: var(--t-sm);
 }
 
@@ -56,11 +56,11 @@
 }
 
 .intentos li[data-estado="ok"] {
-  border-color: var(--agua);
+  border-color: var(--ok);
 }
 
 .intentos li[data-estado="fallo"] {
-  border-color: var(--sodio);
+  border-color: var(--accion);
 }
 
 .guia {
@@ -82,7 +82,7 @@
 }
 
 .guia a {
-  color: var(--sodio);
+  color: var(--accion);
   font-weight: 700;
 }
 

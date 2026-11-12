@@ -20,6 +20,19 @@
   --campo-fondo: color-mix(in srgb, var(--fondo) 70%, black);
   --error: var(--baliza);
 
+  /* Tokens del centro de control con valores de Turno de noche, para piezas compartidas. */
+  --superficie-solida: var(--asfalto);
+  --brillo: rgb(255 255 255 / 8%);
+  --ok: var(--agua);
+  --sev-critico: var(--baliza);
+  --sev-alto: var(--sodio);
+  --sev-medio: var(--sodio);
+  --sev-bajo: var(--agua);
+  --sobre-peligro: var(--noche);
+  --luz-a: rgb(255 176 0 / 12%);
+  --luz-b: rgb(94 214 208 / 12%);
+  --fuente-cifras: var(--font-plex-mono), ui-monospace, monospace;
+
   --fuente-texto: var(--font-atkinson), system-ui, sans-serif;
   --fuente-titulo: var(--font-archivo), system-ui, sans-serif;
 
@@ -79,6 +92,7 @@
 
 /* Centro de control: consola casi negra con acento azul y paneles de vidrio líquido. */
 [data-tema="centinela"] {
+  --sobre-peligro: #070b11;
   --fondo: #070b11;
   --superficie: rgb(22 33 48 / 55%);
   --superficie-solida: #111a25;
@@ -102,6 +116,7 @@
 }
 
 [data-tema="centinela-claro"] {
+  --sobre-peligro: #ffffff;
   --fondo: #e9eff6;
   --superficie: rgb(255 255 255 / 58%);
   --superficie-solida: #ffffff;

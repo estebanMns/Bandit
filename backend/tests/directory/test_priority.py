@@ -16,6 +16,8 @@ from bandit.directory.domain.models import WantedRecord, crime_level, parse_rewa
         ("1,5 millones", 1_500_000),
         ("1.500 millones", 1_500_000_000),
         ("500 mil", 500_000),
+        ("HASTA 3.076 SMLMV EN RECOMPENSA", 3_076 * 1_423_500),
+        ("100 salarios mínimos", 100 * 1_423_500),
         ("No Aplica", None),
         ("N/A", None),
         ("", None),
@@ -75,3 +77,7 @@ def test_highest_reward_first_then_gravest_crime_then_police_order():
         "Homicidio sin recompensa",
         "Hurto sin recompensa",
     ]
+
+
+def test_minimum_wage_value_is_configurable():
+    assert parse_reward("10 SMLMV", smlmv_cop=2_000_000) == 20_000_000

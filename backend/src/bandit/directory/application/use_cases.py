@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from bandit.directory.application.tools import SOURCE_URL, ScrapingTools
 from bandit.directory.domain.models import (
+    DEFAULT_SMLMV_COP,
     ExtractedRecord,
     SyncReport,
     WantedRecord,
@@ -63,6 +64,7 @@ class SyncDirectory:
         media: MediaStore,
         revalidator: SiteRevalidator,
         clock: Clock,
+        smlmv_cop: int = DEFAULT_SMLMV_COP,
     ) -> None:
         self._agent = agent
         self._fetcher = fetcher
@@ -71,6 +73,7 @@ class SyncDirectory:
         self._media = media
         self._revalidator = revalidator
         self._clock = clock
+        self._smlmv_cop = smlmv_cop
 
     async def execute(self) -> SyncReport:
         tools = ScrapingTools(self._fetcher, self._read_pdf_text)
@@ -120,7 +123,7 @@ class SyncDirectory:
             source_url=SOURCE_URL,
             first_seen_at=existing.first_seen_at if existing else now,
             last_seen_at=now,
-            reward_amount=parse_reward(extracted.reward),
+            reward_amount=parse_reward(extracted.reward, self._smlmv_cop),
             listing_position=extracted.listing_position,
         )
         record.photo_file = await self._download(

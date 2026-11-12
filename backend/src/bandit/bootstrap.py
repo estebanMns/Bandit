@@ -204,6 +204,7 @@ def build_application(settings: Settings) -> Application:
         NextRevalidator(settings.frontend_internal_url, settings.revalidate_secret),
         clock,
         timedelta(hours=settings.directory_scrape_interval_hours),
+        settings.smlmv_cop,
     )
     application = Application(
         engine=engine,
