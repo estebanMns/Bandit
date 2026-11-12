@@ -61,7 +61,7 @@ interface StatCardProps {
 
 export function StatCard({ label, icon, value, note, tone, series, color }: StatCardProps) {
   return (
-    <article className={`${styles.vidrio} ${styles.tarjeta}`}>
+    <article className={`vidrio ${styles.tarjeta}`}>
       <div className={styles.tarjetaCabecera}>
         <h2 style={{ font: "inherit" }}>{label}</h2>
         <Icon name={icon} />
