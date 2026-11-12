@@ -1,17 +1,19 @@
 .pagina {
   display: grid;
-  gap: var(--e-8);
-  width: min(100% - 2 * var(--e-6), 64rem);
-  margin: var(--e-8) auto var(--e-12);
+  gap: 14px;
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
 }
 
 .cabecera {
   display: grid;
   gap: var(--e-2);
+  padding: 18px 20px;
 }
 
 .eyebrow {
-  color: var(--sodio);
+  color: var(--accion);
   font-size: var(--t-sm);
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -61,7 +63,7 @@
 }
 
 .paso[aria-current="step"] {
-  border-color: var(--sodio);
+  border-color: var(--accion);
   background: var(--superficie);
 }
 
@@ -76,9 +78,9 @@
 }
 
 .paso[data-hecho="true"] .numero {
-  border-color: var(--agua);
-  background: var(--agua);
-  color: var(--noche);
+  border-color: var(--ok);
+  background: var(--ok);
+  color: var(--sobre-accion);
 }
 
 .estado {
@@ -130,15 +132,15 @@
 .botonEnlace {
   padding: var(--e-2) var(--e-6);
   border-radius: var(--radio-control);
-  background: var(--sodio);
-  color: var(--noche);
+  background: var(--accion);
+  color: var(--sobre-accion);
   font-family: var(--fuente-titulo);
   font-weight: 700;
   text-decoration: none;
 }
 
 .enlace {
-  color: var(--sodio);
+  color: var(--accion);
   font-weight: 700;
 }
 
