@@ -42,3 +42,6 @@ next-env.d.ts
 relay/mediamtx.yml
 relay/mediamtx
 relay/*.tar.gz
+
+# Fotos personales de la demostración de rostros: nunca se versionan
+**/evaluation/rostros/
