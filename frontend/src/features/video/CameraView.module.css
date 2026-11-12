@@ -67,10 +67,10 @@ button.vista {
 
 .estado[data-estado="en-vivo"] .marca {
   border-radius: 50%;
-  background: var(--agua);
+  background: var(--ok);
 }
 
 .estado[data-estado="sin-senal"] .marca {
-  background: var(--sodio);
+  background: var(--accion);
   transform: rotate(45deg);
 }
