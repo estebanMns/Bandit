@@ -83,7 +83,7 @@ está el `.env`) y con el entorno de Python activado:
    ```
 3. Arranca el frontend con `npm run dev` en `frontend/` y abre <http://localhost:3000>. Para
    abrirlo desde otro equipo de la red, pon su IP en `frontend/.env.local`
-   (`ALLOWED_DEV_ORIGINS=192.168.1.150`) y reinicia `npm run dev`.
+   (`ALLOWED_DEV_ORIGINS=192.168.1.50`) y reinicia `npm run dev`.
 
 En este modo las evidencias y fotos del directorio guardadas por Docker no existen (viven en su
 volumen), así que esas imágenes muestran "no disponible". `next dev` también es más lento que la
