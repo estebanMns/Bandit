@@ -83,7 +83,8 @@ export function RegisterForm() {
   }
 
   return (
-    <form className={styles.formulario} onSubmit={submit}>
+    // method="post": si el JavaScript no carga, la clave nunca queda en la dirección.
+    <form className={styles.formulario} method="post" onSubmit={submit}>
       <fieldset className={styles.grupo}>
         <legend>Tu local</legend>
         <Field label="Nombre del local" name="localName" autoComplete="organization" required />
