@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { api } from "@/lib/api";
-import styles from "./AppShell.module.css";
+import styles from "./ControlShell.module.css";
 
 function subscribe() {
   return () => undefined;
