@@ -67,6 +67,28 @@ Funciona igual en Mac con Apple Silicon o Intel: las imágenes de Docker son mul
    ni nube. Si no, usa el puente (`bash relay/iniciar-puente.sh`, que también corre en macOS) o la
    nube de Imou.
 
+### Correr sin Docker en Windows (para depurar)
+
+Lo normal es Docker: es más rápido y trae todo listo. Sin Docker, desde la carpeta raíz (donde
+está el `.env`) y con el entorno de Python activado:
+
+1. Instala ffmpeg, que lee el video de las cámaras, y abre una terminal nueva:
+   ```powershell
+   winget install Gyan.FFmpeg
+   ```
+2. Arranca el backend **sin `--reload`**: en Windows ese modo usa un bucle de eventos que no puede
+   abrir ffmpeg y las cámaras quedan caídas ("No se puede leer la cámara…").
+   ```powershell
+   uvicorn --factory bandit.main:create_app --port 8000
+   ```
+3. Arranca el frontend con `npm run dev` en `frontend/` y abre <http://localhost:3000>. Para
+   abrirlo desde otro equipo de la red, pon su IP en `frontend/.env.local`
+   (`ALLOWED_DEV_ORIGINS=192.168.1.50`) y reinicia `npm run dev`.
+
+En este modo las evidencias y fotos del directorio guardadas por Docker no existen (viven en su
+volumen), así que esas imágenes muestran "no disponible". `next dev` también es más lento que la
+versión de Docker: compila cada página la primera vez y no reenvía los eventos en vivo.
+
 ### Cuentas y roles
 
 | Rol | Cómo se crea | Alcance |

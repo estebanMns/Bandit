@@ -17,8 +17,18 @@ const crossOriginIsolation = [
   { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
 ];
 
+/**
+ * Solo para `next dev`: direcciones de la red local desde las que se puede abrir el servidor de
+ * desarrollo, por ejemplo ALLOWED_DEV_ORIGINS=192.168.1.50 en frontend/.env.local.
+ */
+const allowedDevOrigins = (process.env.ALLOWED_DEV_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const config: NextConfig = {
   output: "standalone",
+  allowedDevOrigins,
   poweredByHeader: false,
   images: { unoptimized: true },
   async headers() {

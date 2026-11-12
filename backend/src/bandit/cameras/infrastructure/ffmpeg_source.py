@@ -3,6 +3,7 @@
 import asyncio
 from collections.abc import AsyncIterator
 
+from bandit.cameras.domain.ports import FrameSourceUnavailableError
 from bandit.cameras.infrastructure.jpeg_parser import JpegStreamParser
 
 _CHUNK_BYTES = 64 * 1024
@@ -38,13 +39,24 @@ class FfmpegFrameSource:
         ]
 
     async def stream(self, url: str) -> AsyncIterator[bytes]:
-        process = await asyncio.create_subprocess_exec(
-            self._ffmpeg_path,
-            *self._arguments(url),
-            stdout=asyncio.subprocess.PIPE,
-            # ffmpeg puede imprimir la URL con credenciales: su salida no se conserva.
-            stderr=asyncio.subprocess.DEVNULL,
-        )
+        try:
+            process = await asyncio.create_subprocess_exec(
+                self._ffmpeg_path,
+                *self._arguments(url),
+                stdout=asyncio.subprocess.PIPE,
+                # ffmpeg puede imprimir la URL con credenciales: su salida no se conserva.
+                stderr=asyncio.subprocess.DEVNULL,
+            )
+        except NotImplementedError as error:
+            # Windows con uvicorn --reload usa un bucle de eventos que no abre subprocesos.
+            raise FrameSourceUnavailableError(
+                "este bucle de eventos no puede abrir ffmpeg; "
+                "en Windows arranca uvicorn sin --reload"
+            ) from error
+        except FileNotFoundError as error:
+            raise FrameSourceUnavailableError(
+                f"no se encontró ffmpeg ('{self._ffmpeg_path}'); instálalo o ajusta FFMPEG_PATH"
+            ) from error
         assert process.stdout is not None
         parser = JpegStreamParser()
         try:

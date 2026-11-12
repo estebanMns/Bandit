@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
+import { EvidenceImage } from "@/features/incidents/EvidenceImage";
 import { formatDateTime, situationLabel, STATUS_LABELS } from "@/features/incidents/labels";
 import type { Incident } from "@/features/incidents/types";
 import { serverApi } from "@/lib/server-api";
@@ -18,10 +19,9 @@ export default async function IncidentPage({ params }: { params: Promise<{ id: s
         <Link href="/incidentes">Volver a incidentes</Link>
         <h1 className={styles.titulo}>{situationLabel(incident.type)}</h1>
         <div className={styles.detalle}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <EvidenceImage
             className={styles.evidencia}
-            src={`/api/incidents/${incident.id}/evidence`}
+            incidentId={incident.id}
             alt={`Fotograma de ${incident.camera_name}: ${incident.description}`}
           />
           <div className={styles.resumen}>

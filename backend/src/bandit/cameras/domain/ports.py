@@ -21,6 +21,10 @@ class CameraRepository(Protocol):
     async def list_enabled(self) -> list[Camera]: ...
 
 
+class FrameSourceUnavailableError(Exception):
+    """El equipo no puede leer video. Su mensaje es seguro: nunca incluye la URL."""
+
+
 class FrameSource(Protocol):
     """Entrega JPEG de un stream. Termina o lanza una excepción si la conexión cae."""
 

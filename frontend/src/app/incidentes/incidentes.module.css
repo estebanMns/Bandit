@@ -102,3 +102,15 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Evidencia vencida o ausente: un aviso en el mismo espacio de la imagen. */
+.evidencia[data-sin-evidencia="true"] {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  margin: 0;
+  padding: 16px;
+  color: var(--texto-tenue);
+  font-size: var(--t-sm);
+  text-align: center;
+}

@@ -3,12 +3,28 @@
 import { useEffect, useMemo, useState } from "react";
 import { getActivity } from "@/features/activity/api";
 import { connectionOptions } from "@/features/cameras/api";
-import { listEstablishments, type Establishment } from "@/features/establishments/api";
+import {
+  knownEstablishments,
+  listEstablishments,
+  type Establishment,
+} from "@/features/establishments/api";
 import { useLiveEvents } from "@/features/live/useLiveEvents";
 import { api } from "@/lib/api";
+import { cached, invalidate, peek } from "@/lib/cache";
 import { overallStatus, systemStatus, type StatusRow } from "./model";
 
 const LOCAL_KEY = "bandit.local";
+
+// Claves de la caché compartida entre ventanas (ver lib/cache.ts).
+const ME = "me";
+const HEALTH = "health";
+const OPTIONS = "connection-options";
+const OPTIONS_MAX_AGE_MS = 5 * 60_000;
+
+interface ModelState {
+  enabled: boolean;
+  name: string | null;
+}
 
 export interface Me {
   email: string;
@@ -41,32 +57,42 @@ const NOOP = () => undefined;
  * Nunca redirige: el directorio es público y se ve también sin sesión.
  */
 export function useShellData(): ShellData {
-  const [me, setMe] = useState<Me | null>(null);
-  const [signedIn, setSignedIn] = useState<boolean | null>(null);
-  const [establishments, setEstablishments] = useState<Establishment[]>([]);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [server, setServer] = useState<boolean | null>(null);
-  const [imouCloud, setImouCloud] = useState<boolean | null>(null);
-  const [model, setModel] = useState<{ enabled: boolean; name: string | null } | null>(null);
+  // Al cambiar de ventana se arranca con lo ya conocido; en una carga completa la caché está
+  // vacía, igual que en el servidor, así que no hay desajuste al hidratar.
+  const [known] = useState(() => peek<Me>(ME));
+  const [me, setMe] = useState<Me | null>(known ?? null);
+  const [signedIn, setSignedIn] = useState<boolean | null>(known ? true : null);
+  const [establishments, setEstablishments] = useState<Establishment[]>(() =>
+    known ? (knownEstablishments() ?? []) : [],
+  );
+  const [selected, setSelected] = useState<string | null>(() => (known ? readLocal() : null));
+  const [server, setServer] = useState<boolean | null>(() => peek<boolean>(HEALTH) ?? null);
+  const [imouCloud, setImouCloud] = useState<boolean | null>(
+    () => peek<{ imou_cloud: boolean }>(OPTIONS)?.imou_cloud ?? null,
+  );
+  const [model, setModel] = useState<ModelState | null>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelected(readLocal());
-    fetch("/api/health")
-      .then((response) => setServer(response.ok))
+    cached(HEALTH, () => fetch("/api/health").then((response) => response.ok))
+      .then(setServer)
       .catch(() => setServer(false));
-    api<Me>("/api/auth/me")
+    cached(ME, () => api<Me>("/api/auth/me"))
       .then((user) => {
         setMe(user);
         setSignedIn(true);
         listEstablishments()
           .then(setEstablishments)
           .catch(() => setEstablishments([]));
-        connectionOptions()
+        cached(OPTIONS, connectionOptions, OPTIONS_MAX_AGE_MS)
           .then((options) => setImouCloud(options.imou_cloud))
           .catch(() => setImouCloud(false));
       })
-      .catch(() => setSignedIn(false));
+      .catch(() => {
+        invalidate(ME);
+        setSignedIn(false);
+      });
   }, []);
 
   const current = useMemo(
@@ -76,10 +102,17 @@ export function useShellData(): ShellData {
 
   useEffect(() => {
     if (!current) return;
-    getActivity(current.id)
-      .then((snapshot) =>
-        setModel({ enabled: snapshot.model_enabled, name: snapshot.model ?? null }),
-      )
+    const key = `model:${current.id}`;
+    const known = peek<ModelState>(key);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (known) setModel(known);
+    cached(key, () =>
+      getActivity(current.id).then((snapshot) => ({
+        enabled: snapshot.model_enabled,
+        name: snapshot.model ?? null,
+      })),
+    )
+      .then(setModel)
       .catch(() => setModel(null));
   }, [current]);
 
