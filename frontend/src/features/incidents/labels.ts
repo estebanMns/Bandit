@@ -6,6 +6,7 @@ const SITUATIONS: Record<string, string> = {
   fight: "Pelea",
   fire: "Fuego o humo",
   medical: "Emergencia de salud",
+  wanted_match: "Persona buscada identificada",
 };
 
 export const STATUS_LABELS: Record<IncidentStatus, string> = {
