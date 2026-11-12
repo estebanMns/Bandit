@@ -29,7 +29,7 @@ data/
 *.mp4
 *.mkv
 *.avi
-**/evaluation/frames/
+
 
 # Sistema y editor
 .DS_Store
@@ -42,3 +42,5 @@ next-env.d.ts
 relay/mediamtx.yml
 relay/mediamtx
 relay/*.tar.gz
+
+

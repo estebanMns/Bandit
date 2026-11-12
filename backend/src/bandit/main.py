@@ -13,6 +13,7 @@ from bandit.cameras.api.routes import video_router
 from bandit.directory.api.routes import router as directory_router
 from bandit.directory.domain.models import SyncTrigger
 from bandit.establishments.api.routes import router as establishments_router
+from bandit.faces.api.routes import router as faces_router
 from bandit.identity.api.routes import router as identity_router
 from bandit.incidents.api.routes import router as incidents_router
 from bandit.notifications.api.routes import router as notifications_router
@@ -52,6 +53,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await application.directory.runner.stop()
         await application.cameras.supervisor.stop_all()
         await application.analysis.supervisor.stop_all()
+        if application.faces.supervisor is not None:
+            await application.faces.supervisor.stop_all()
         await application.background.wait_all()
         scheduler.shutdown(wait=False)
         await application.engine.dispose()
@@ -64,6 +67,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.incidents = application.incidents
     app.state.notifications = application.notifications
     app.state.directory = application.directory
+    app.state.faces = application.faces
     app.state.places = application.places
     app.state.event_hub = application.event_hub
     install_error_handlers(app)
@@ -76,6 +80,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         incidents_router,
         notifications_router,
         directory_router,
+        faces_router,
         places_router,
         realtime_router,
     ):

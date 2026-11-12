@@ -31,6 +31,14 @@ class Settings(BaseSettings):
     analysis_confirmation_frames: int = Field(default=2, ge=1)
     analysis_cooldown_seconds: float = Field(default=120, ge=0)
 
+    # Prueba de rostros: compara a quien aparece en cámara solo con los registros de prueba
+    # locales que dieron su consentimiento. Apagada por defecto.
+    face_watch_enabled: bool = False
+    face_watch_model: str = "gemini-3.1-flash-lite"
+    face_watch_interval_seconds: float = Field(default=5, gt=0)
+    face_watch_daily_limit: int = Field(default=300, ge=0)
+    face_watch_cooldown_seconds: float = Field(default=600, ge=0)
+
     whatsapp_access_token: str = ""
     whatsapp_phone_number_id: str = ""
     whatsapp_template_name: str = "bandit_incidente"

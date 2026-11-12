@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -13,6 +13,7 @@ from bandit.analysis.infrastructure.gemini_analyzer import (
     DisabledSceneAnalyzer,
     GeminiSceneAnalyzer,
 )
+from bandit.analysis.infrastructure.pillow_motion import PillowMotionDetector
 from bandit.analysis.module import AnalysisModule
 from bandit.cameras.application.discovery import PathAdvisor
 from bandit.cameras.domain.models import CameraStatusChanged
@@ -39,9 +40,14 @@ from bandit.directory.module import DirectoryModule
 from bandit.establishments.infrastructure import tables as establishment_tables  # noqa: F401
 from bandit.establishments.infrastructure.nominatim import NominatimGeocoder
 from bandit.establishments.module import EstablishmentsModule
+from bandit.faces.application.watcher import FacePolicy
+from bandit.faces.domain.models import FaceCheckDone
+from bandit.faces.infrastructure.gemini_comparer import GeminiFaceComparer
+from bandit.faces.infrastructure.reference_folder import ReferenceFolderWatchList
+from bandit.faces.module import FacesModule
 from bandit.identity.infrastructure import tables as identity_tables  # noqa: F401
 from bandit.identity.module import IdentityModule
-from bandit.incidents.domain.models import IncidentChanged, IncidentConfirmed
+from bandit.incidents.domain.models import Incident, IncidentChanged, IncidentConfirmed
 from bandit.incidents.infrastructure import tables as incident_tables  # noqa: F401
 from bandit.incidents.infrastructure.file_evidence import FileEvidenceStore
 from bandit.incidents.module import IncidentsModule
@@ -58,7 +64,7 @@ from bandit.places.module import PlacesModule
 from bandit.realtime.application.event_hub import EventHub
 from bandit.realtime.application.translators import LiveEventPublisher
 from bandit.shared.background import BackgroundTasks
-from bandit.shared.clock import SystemClock
+from bandit.shared.clock import Clock, SystemClock
 from bandit.shared.config import Settings
 from bandit.shared.db import create_engine, create_session_factory
 from bandit.shared.events import EventBus, InMemoryEventBus
@@ -74,6 +80,7 @@ class Application:
     incidents: IncidentsModule
     notifications: NotificationsModule
     directory: DirectoryModule
+    faces: FacesModule
     places: PlacesModule
     event_hub: EventHub
     background: BackgroundTasks
@@ -117,6 +124,35 @@ def _directory_agent(settings: Settings) -> DirectoryAgent:
     return GeminiDirectoryAgent(settings.gemini_api_key, _text_model(settings))
 
 
+def _faces_module(
+    settings: Settings,
+    cameras: CamerasModule,
+    directory: DirectoryModule,
+    bus: EventBus,
+    clock: Clock,
+) -> FacesModule:
+    async def consented_people() -> list[tuple[str, str]]:
+        records = await directory.list_active.execute()
+        return [(record.name, record.slug) for record in records if record.local_test]
+
+    enabled = settings.face_watch_enabled and bool(settings.gemini_api_key)
+    return FacesModule(
+        cameras.frames,
+        cameras.get,
+        GeminiFaceComparer(settings.gemini_api_key, settings.face_watch_model) if enabled else None,
+        ReferenceFolderWatchList(str(Path(settings.media_root) / "faces"), consented_people),
+        PillowMotionDetector(),
+        FacePolicy(
+            min_interval_seconds=settings.face_watch_interval_seconds,
+            motion_threshold=settings.analysis_motion_threshold,
+        ),
+        settings.face_watch_cooldown_seconds,
+        settings.face_watch_daily_limit,
+        bus,
+        clock,
+    )
+
+
 def _wire_events(bus: EventBus, app: Application) -> None:
     """Los módulos no se conocen entre sí: aquí se conectan sus eventos."""
     live = LiveEventPublisher(app.event_hub)
@@ -141,6 +177,40 @@ def _wire_events(bus: EventBus, app: Application) -> None:
     bus.subscribe(IncidentConfirmed, on_confirmed)
     bus.subscribe(AlertDelivered, on_delivered)
     bus.subscribe(AlertFailed, on_failed)
+
+    # Prueba de rostros: cada comparación va a Actividad; una coincidencia, a Eventos.
+    async def on_face_check(event: FaceCheckDone) -> None:
+        check = event.check
+        if not check.alerted or check.person is None:
+            return
+        incident = Incident(
+            id=uuid4(),
+            establishment_id=check.establishment_id,
+            camera_id=check.camera_id,
+            camera_name=check.camera_name,
+            type=WANTED_MATCH,
+            severity="high",
+            confidence=check.confidence,
+            description=describe_face_match(check.person, check.confidence, check.explanation),
+            detected_at=check.at,
+        )
+        await app.incidents.record_situation.record(incident, event.jpeg)
+
+    if app.faces.supervisor is not None:
+        bus.subscribe(CameraStatusChanged, app.faces.supervisor.on_camera_status)
+    bus.subscribe(FaceCheckDone, live.on_face_check)
+    bus.subscribe(FaceCheckDone, on_face_check)
+
+
+WANTED_MATCH = "wanted_match"
+
+
+def describe_face_match(person: str, confidence: float, explanation: str) -> str:
+    text = (
+        f"Coincidencia con {person}, de la lista de buscados (registro de prueba), "
+        f"{confidence:.0%}: {explanation}"
+    )
+    return text[:300]
 
 
 def build_application(settings: Settings) -> Application:
@@ -206,6 +276,7 @@ def build_application(settings: Settings) -> Application:
         timedelta(hours=settings.directory_scrape_interval_hours),
         settings.smlmv_cop,
     )
+    faces = _faces_module(settings, cameras, directory, bus, clock)
     application = Application(
         engine=engine,
         identity=identity,
@@ -215,6 +286,7 @@ def build_application(settings: Settings) -> Application:
         incidents=incidents,
         notifications=notifications,
         directory=directory,
+        faces=faces,
         places=PlacesModule(
             FirstAvailableStations(
                 [

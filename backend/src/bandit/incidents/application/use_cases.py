@@ -57,8 +57,12 @@ class RecordSituation:
             description=assessment.description,
             detected_at=event.detected_at,
         )
+        return await self.record(incident, event.evidence_jpeg)
+
+    async def record(self, incident: Incident, evidence_jpeg: bytes) -> Incident:
+        """Guarda un incidente pendiente con su evidencia. Tampoco avisa a nadie externo."""
         await self._incidents.add(incident)
-        await self._evidence.save(incident.id, event.evidence_jpeg)
+        await self._evidence.save(incident.id, evidence_jpeg)
         await self._bus.publish(IncidentChanged(incident=incident))
         return incident
 

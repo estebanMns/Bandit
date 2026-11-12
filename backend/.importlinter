@@ -11,6 +11,7 @@ source_modules =
     bandit.incidents
 forbidden_modules =
     bandit.directory
+    bandit.faces
 
 [importlinter:contract:directorio-sin-video]
 name = El directorio no conoce el video
@@ -21,6 +22,18 @@ forbidden_modules =
     bandit.analysis
     bandit.cameras
     bandit.incidents
+    bandit.faces
+
+# La prueba de rostros no conoce el directorio ni los incidentes: bootstrap los conecta.
+[importlinter:contract:rostros-aislados]
+name = La prueba de rostros no conoce el directorio ni los incidentes
+type = forbidden
+source_modules =
+    bandit.faces
+forbidden_modules =
+    bandit.directory
+    bandit.incidents
+    bandit.analysis
 
 # Dentro de cada módulo, el dominio no depende de capas externas.
 [importlinter:contract:capas]
@@ -36,6 +49,7 @@ containers =
     bandit.notifications
     bandit.realtime
     bandit.places
+    bandit.faces
 layers =
     (api)
     (infrastructure)

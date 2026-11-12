@@ -149,6 +149,22 @@ Si `GEMINI_MODEL` se queda sin cuota (error `429 RESOURCE_EXHAUSTED`), define
 `GEMINI_DIRECTORY_MODEL`, por ejemplo `gemini-3.5-flash`, para extraer el directorio con otro modelo.
 El panel **Actividad IA** muestra el error exacto de cada extracción.
 
+### Probar alertas con fotos
+
+Sin cámara, puedes comprobar con Gemini real que Bandit detecta una situación y crea la alerta.
+Pon fotos `.jpg` en `backend/evaluation/frames/<situación>/` (`weapon`, `robbery`, `fight`, `fire`,
+`medical` o `none`); esa carpeta no se sube a GitHub. Luego, desde la carpeta `Bandit`:
+
+```bash
+docker compose cp backend/evaluation/frames backend:/app/var/pruebas
+docker compose exec backend python -m bandit.tools.simulate_alert /app/var/pruebas/weapon --local "Tu local"
+```
+
+El script muestra qué vio Gemini en cada foto. Si ve la misma situación en dos fotos seguidas,
+crea la alerta en la cámara "Prueba (fotos)" del local: aparece en Eventos, el Monitor y el Panel.
+No envía WhatsApp a menos que un operador confirme la alerta. Bandit detecta situaciones; no
+identifica personas.
+
 ### Panel de actividad de la IA
 
 **Actividad IA** muestra, por cámara, el último fotograma que analizó Gemini, el nivel de

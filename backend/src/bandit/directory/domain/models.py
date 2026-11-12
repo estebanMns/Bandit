@@ -39,6 +39,10 @@ class ExtractedRecord:
     listing_position: int | None = None
 
 
+# Fuente de los registros de prueba creados a mano en este equipo, nunca por la Policía.
+LOCAL_TEST_SOURCE = "prueba-local"
+
+
 @dataclass(slots=True)
 class WantedRecord:
     id: UUID
@@ -58,6 +62,10 @@ class WantedRecord:
     active: bool = True
     reward_amount: int | None = None
     listing_position: int | None = None
+
+    @property
+    def local_test(self) -> bool:
+        return self.source_url == LOCAL_TEST_SOURCE
 
 
 @dataclass(frozen=True, slots=True)

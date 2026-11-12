@@ -2,6 +2,7 @@
 
 from bandit.analysis.public import ActivityEntryResponse, AnalysisActivity
 from bandit.cameras.public import CameraStatusChanged
+from bandit.faces.public import FaceCheckDone, FaceCheckResponse
 from bandit.incidents.public import IncidentChanged, IncidentResponse
 from bandit.realtime.application.event_hub import EventHub
 
@@ -32,4 +33,11 @@ class LiveEventPublisher:
                 "cameraName": event.camera_name,
                 "entry": entry.model_dump(mode="json"),
             },
+        )
+
+    async def on_face_check(self, event: FaceCheckDone) -> None:
+        check = FaceCheckResponse.of(event.check)
+        self._hub.publish(
+            event.check.establishment_id,
+            {"type": "face", "check": check.model_dump(mode="json")},
         )

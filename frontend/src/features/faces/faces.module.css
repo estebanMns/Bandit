@@ -1,0 +1,153 @@
+/* Prueba de rostros: rojo cuando coincide, verde cuando no, apagado si no hay cara. */
+
+.seccion {
+  display: grid;
+  gap: var(--e-4);
+  padding: 16px 18px;
+}
+
+.seccion h2 {
+  font-size: var(--t-lg);
+}
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--e-4);
+}
+
+.encabezado p {
+  max-width: 44rem;
+}
+
+.detalle {
+  color: var(--texto-tenue);
+  font-size: var(--t-sm);
+}
+
+.detalle code {
+  font-family: var(--fuente-cifras);
+  font-size: 0.95em;
+}
+
+.enlace {
+  color: var(--accion);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.cifras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2);
+  margin: 0;
+}
+
+.cifras > div {
+  display: grid;
+  gap: 2px;
+  min-width: 6.5rem;
+  padding: 8px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.cifras dt {
+  color: var(--texto-tenue);
+  font-size: var(--t-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cifras dd {
+  margin: 0;
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+
+.cifras > div[data-tono="alerta"] dd {
+  color: var(--sev-critico);
+}
+
+.cifras > div[data-tono="calma"] dd {
+  color: var(--ok);
+}
+
+.lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  gap: var(--e-3);
+  max-height: 34rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: var(--e-3);
+  padding: 10px;
+  border: 1px solid var(--borde);
+  border-left-width: 4px;
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.item[data-resultado="match"] {
+  border-color: var(--sev-critico);
+}
+
+.item[data-resultado="no_match"] {
+  border-left-color: var(--ok);
+}
+
+.item[data-resultado="error"] {
+  border-left-color: var(--accion);
+}
+
+.item img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  background: #070d22;
+  object-fit: cover;
+}
+
+.texto {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.veredicto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--e-2);
+  font-weight: 700;
+}
+
+.etiqueta {
+  font-size: var(--t-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.item[data-resultado="match"] .etiqueta {
+  color: var(--sev-critico);
+}
+
+.item[data-resultado="no_match"] .etiqueta {
+  color: var(--ok);
+}
+
+.explicacion {
+  font-size: var(--t-sm);
+  overflow-wrap: anywhere;
+}
