@@ -43,13 +43,15 @@ function isActive(pathname: string, href: string): boolean {
 
 interface ControlShellProps {
   title: string;
+  /** El Panel usa la cabecera como título; las demás páginas traen su propio h1. */
+  heading?: boolean;
   /** Acciones propias de la página en la cabecera, junto al reloj. */
   actions?: ReactNode;
   children: ReactNode;
 }
 
 /** Marco del centro de control: barra lateral, cabecera y fondo de vidrio líquido. */
-export function ControlShell({ title, actions, children }: ControlShellProps) {
+export function ControlShell({ title, heading = false, actions, children }: ControlShellProps) {
   const pathname = usePathname();
   const { text: clock } = useClock();
   const shell = useShellData();
@@ -130,14 +132,25 @@ export function ControlShell({ title, actions, children }: ControlShellProps) {
         </aside>
 
         <header className={`vidrio ${styles.cabecera}`}>
-          <h1>
-            {title}
-            {shell.signedIn && (
-              <span className={styles.estadoGeneral} data-ok={shell.overall.ok}>
-                · {shell.overall.text}
-              </span>
-            )}
-          </h1>
+          {heading ? (
+            <h1 className={styles.titulo}>
+              {title}
+              {shell.signedIn && (
+                <span className={styles.estadoGeneral} data-ok={shell.overall.ok}>
+                  · {shell.overall.text}
+                </span>
+              )}
+            </h1>
+          ) : (
+            <p className={styles.titulo}>
+              <span className={styles.migas}>Centro de control /</span> {title}
+              {shell.signedIn && (
+                <span className={styles.estadoGeneral} data-ok={shell.overall.ok}>
+                  · {shell.overall.text}
+                </span>
+              )}
+            </p>
+          )}
           <div className={styles.herramientas}>
             {actions}
             <div className={styles.tema} role="group" aria-label="Tema">
