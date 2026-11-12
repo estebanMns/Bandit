@@ -6,6 +6,7 @@ from urllib.parse import urlsplit
 
 from fastapi import Depends, Request, WebSocket
 
+from bandit.identity.api.ws_tickets import WsTickets
 from bandit.identity.domain.models import Role, User
 from bandit.identity.module import IdentityModule
 from bandit.shared.errors import AuthenticationError, PermissionDeniedError
@@ -62,9 +63,14 @@ async def authenticate_websocket(websocket: WebSocket) -> User:
     """Valida sesión y origen: un WebSocket no tiene la protección CORS del navegador."""
     origin = websocket.headers.get("origin")
     host = websocket.headers.get("host")
-    if origin and urlsplit(origin).netloc != host:
+    tickets: WsTickets | None = getattr(websocket.app.state, "ws_tickets", None)
+    allowed = tickets.allowed_origins if tickets else set()
+    if origin and urlsplit(origin).netloc != host and origin.rstrip("/") not in allowed:
         raise PermissionDeniedError("Origen no permitido")
     token = websocket.cookies.get(SESSION_COOKIE)
+    ticket = websocket.query_params.get("ticket")
+    if ticket and tickets is not None:
+        token = tickets.redeem(ticket)
     if not token:
         raise AuthenticationError("Inicia sesión para continuar")
     module: IdentityModule = websocket.app.state.identity

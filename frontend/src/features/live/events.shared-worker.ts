@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 
 import type { FromSharedWorker, ServerEvent, ToSharedWorker } from "./protocol";
+import { backendSocketUrl } from "./socket-url";
 
 /**
  * Una sola conexión a /ws/events por local, sin importar cuántas pestañas estén
@@ -32,9 +33,21 @@ function announce(channel: Channel): void {
   });
 }
 
-function connect(establishmentId: string, channel: Channel): void {
-  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  const socket = new WebSocket(`${protocol}//${location.host}/ws/events/${establishmentId}`);
+function retry(establishmentId: string, channel: Channel): void {
+  channel.retryTimer = setTimeout(() => void connect(establishmentId, channel), channel.retryDelay);
+  channel.retryDelay = Math.min(channel.retryDelay * 2, MAX_RETRY_MS);
+}
+
+async function connect(establishmentId: string, channel: Channel): Promise<void> {
+  let url: string;
+  try {
+    url = await backendSocketUrl(`/ws/events/${encodeURIComponent(establishmentId)}`);
+  } catch {
+    if (channel.ports.size > 0) retry(establishmentId, channel);
+    return;
+  }
+  if (channel.ports.size === 0) return;
+  const socket = new WebSocket(url);
   channel.socket = socket;
 
   socket.onopen = () => {
@@ -50,8 +63,7 @@ function connect(establishmentId: string, channel: Channel): void {
     channel.socket = null;
     if (channel.ports.size === 0) return;
     announce(channel);
-    channel.retryTimer = setTimeout(() => connect(establishmentId, channel), channel.retryDelay);
-    channel.retryDelay = Math.min(channel.retryDelay * 2, MAX_RETRY_MS);
+    retry(establishmentId, channel);
   };
 }
 
@@ -78,7 +90,7 @@ function join(port: MessagePort, establishmentId: string): void {
     channel = { ports: new Set(), socket: null, connected: false, retryDelay: 1_000 };
     channels.set(establishmentId, channel);
     channel.ports.add(port);
-    connect(establishmentId, channel);
+    void connect(establishmentId, channel);
   } else {
     channel.ports.add(port);
   }
