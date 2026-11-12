@@ -5,7 +5,7 @@ import styles from "@/features/directory/directory.module.css";
 export default function DirectoryLayout({ children }: { children: ReactNode }) {
   return (
     <AppShell>
-      <div data-tema="archivo" className={styles.contenedor}>
+      <div className={styles.contenedor}>
         {children}
       </div>
     </AppShell>
