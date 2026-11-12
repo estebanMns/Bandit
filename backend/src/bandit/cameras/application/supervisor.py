@@ -6,7 +6,12 @@ from uuid import UUID
 
 from bandit.cameras.application.frame_hub import FrameHub
 from bandit.cameras.domain.models import Camera, CameraStatus, CameraStatusChanged, Frame
-from bandit.cameras.domain.ports import CameraRepository, FrameSource, UrlCipher
+from bandit.cameras.domain.ports import (
+    CameraRepository,
+    FrameSource,
+    FrameSourceUnavailableError,
+    UrlCipher,
+)
 from bandit.shared.clock import Clock
 from bandit.shared.events import EventBus
 
@@ -75,6 +80,8 @@ class CaptureSupervisor:
                     self._hub.publish(Frame(camera.id, jpeg, self._clock.now()))
             except asyncio.CancelledError:
                 raise
+            except FrameSourceUnavailableError as error:
+                logger.warning("No se puede leer la cámara %s: %s", camera.id, error)
             except Exception as error:
                 # Solo el tipo: el mensaje podría incluir la URL con credenciales.
                 logger.warning("Se perdió la cámara %s: %s", camera.id, type(error).__name__)
