@@ -92,12 +92,19 @@ class SyncRun:
     pages_failed: int = 0
 
 
-_AMOUNT = re.compile(r"(\d[\d.,]*)\s*(millones|millón|millon|mil)?", re.IGNORECASE)
+_AMOUNT = re.compile(
+    r"(\d[\d.,]*)\s*(millones|millón|millon|mil|smlmv|smmlv|salarios? m[ií]nimos?)?", re.IGNORECASE
+)
+_MINIMUM_WAGES = ("smlmv", "smmlv", "salario")
+
+# Salario mínimo legal mensual en pesos (2025). Cambia cada año: se ajusta con SMLMV_COP.
+DEFAULT_SMLMV_COP = 1_423_500
 
 
-def parse_reward(text: str | None) -> int | None:
+def parse_reward(text: str | None, smlmv_cop: int = DEFAULT_SMLMV_COP) -> int | None:
     """Convierte la recompensa publicada en pesos: "10 millones" -> 10000000.
 
+    También entiende salarios mínimos: "3.076 SMLMV" -> 3076 x salario mínimo.
     Devuelve None si no hay monto ("No Aplica", vacío o algo que no se entiende).
     """
     if not text:
@@ -106,6 +113,9 @@ def parse_reward(text: str | None) -> int | None:
     if match is None:
         return None
     digits, unit = match.group(1), (match.group(2) or "").lower()
+    if unit.startswith(_MINIMUM_WAGES):
+        wages = int(re.sub(r"[.,]", "", digits))
+        return wages * smlmv_cop if wages > 0 else None
     if unit:
         # "1,5 millones" o "1.5 millones" es decimal; "1.500 millones" usa punto de miles.
         if re.fullmatch(r"\d+[.,]\d{1,2}", digits):
