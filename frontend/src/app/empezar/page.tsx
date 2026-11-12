@@ -87,7 +87,7 @@ export default function StartPage() {
   return (
     <AppShell>
       <main className={styles.pagina}>
-        <header className={styles.cabecera}>
+        <header className={`vidrio ${styles.cabecera}`}>
           <p className={styles.eyebrow}>Primeros pasos</p>
           <h1>Deja Bandit listo para tu turno</h1>
           <p className={styles.bajada}>
@@ -122,7 +122,7 @@ export default function StartPage() {
             </ol>
           </nav>
 
-          <section className={styles.contenido} aria-live="polite">
+          <section className={`vidrio ${styles.contenido}`} aria-live="polite">
             {loading && <p>Cargando tu cuenta…</p>}
 
             {!loading && active === "local" && (
