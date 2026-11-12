@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useEstablishment } from "@/features/establishments/useEstablishment";
+import { FaceWatchPanel } from "@/features/faces/FaceWatchPanel";
 import styles from "./activity.module.css";
 import { ActivityTimeline } from "./ActivityTimeline";
 import { CameraActivityCard } from "./CameraActivityCard";
@@ -23,7 +24,8 @@ export function ActivityDashboard() {
           <h1>Actividad de la IA</h1>
           <p className={styles.detalle}>
             Lo que Gemini mira en cada cámara, lo que concluye y cuándo confirma una situación.
-            Describe situaciones, nunca identifica personas.
+            Las situaciones nunca identifican personas; la prueba de rostros solo compara con
+            personas de prueba que dieron su consentimiento.
           </p>
         </div>
         <dl className={styles.resumen}>
@@ -93,6 +95,8 @@ export function ActivityDashboard() {
           </section>
         </div>
       )}
+
+      {current && <FaceWatchPanel establishmentId={current.id} />}
 
       <DirectoryPanel />
     </main>
