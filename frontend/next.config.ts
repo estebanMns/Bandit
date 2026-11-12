@@ -31,6 +31,9 @@ const config: NextConfig = {
   allowedDevOrigins,
   poweredByHeader: false,
   images: { unoptimized: true },
+  // Desarrollo: permite abrir la app desde otro equipo de la red local. Sin esto, Next
+  // bloquea el JavaScript y los formularios se envían como GET.
+  allowedDevOrigins: ["192.168.1.113"],
   async headers() {
     return [
       { source: "/:path*", headers: [...securityHeaders, ...crossOriginIsolation] },
