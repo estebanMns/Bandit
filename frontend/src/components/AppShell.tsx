@@ -1,48 +1,39 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { LogoutButton } from "./LogoutButton";
-import styles from "./AppShell.module.css";
+import { ControlShell } from "./ControlShell";
 
-const LINKS = [
-  { href: "/panel", label: "Panel" },
-  { href: "/monitor", label: "Monitor" },
-  { href: "/actividad", label: "Actividad IA" },
-  { href: "/incidentes", label: "Incidentes" },
-  { href: "/directorio", label: "Directorio" },
-  { href: "/ajustes/camaras", label: "Cámaras" },
-  { href: "/ajustes/local", label: "Local" },
+/** Título de cada página interna en la cabecera del centro de control. */
+const TITLES: [prefix: string, title: string][] = [
+  ["/monitor", "Monitor en vivo"],
+  ["/incidentes", "Eventos"],
+  ["/actividad", "Analítica · actividad de la IA"],
+  ["/directorio", "Boletín · los más buscados"],
+  ["/ajustes/camaras", "Cámaras"],
+  ["/ajustes/local", "Ajustes del local"],
+  ["/empezar", "Primeros pasos"],
 ];
 
-export function AppShell({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
-  const pathname = usePathname();
+function titleFor(pathname: string): string {
+  return TITLES.find(([prefix]) => pathname.startsWith(prefix))?.[1] ?? "Bandit";
+}
 
+/** Todas las páginas internas usan el marco del centro de control. */
+export function AppShell({
+  children,
+  aside,
+  title,
+}: {
+  children: ReactNode;
+  /** Acciones propias de la página, en la cabecera. */
+  aside?: ReactNode;
+  title?: string;
+}) {
+  const pathname = usePathname();
   return (
-    <div className={styles.marco}>
-      <header className={styles.cabecera}>
-        <Link href="/panel" className={styles.marca}>
-          Bandit
-        </Link>
-        <nav aria-label="Principal" className={styles.nav}>
-          {LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={styles.enlace}
-              aria-current={pathname.startsWith(link.href) ? "page" : undefined}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-        <div className={styles.lateral}>
-          {aside}
-          <LogoutButton />
-        </div>
-      </header>
+    <ControlShell title={title ?? titleFor(pathname)} actions={aside}>
       {children}
-    </div>
+    </ControlShell>
   );
 }
