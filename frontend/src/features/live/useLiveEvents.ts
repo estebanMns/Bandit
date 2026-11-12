@@ -27,7 +27,7 @@ export function useLiveEvents(
     if (typeof SharedWorker === "undefined") {
       let socket: WebSocket | null = null;
       let closed = false;
-      backendSocketUrl(`/ws/events/${establishmentId}`)
+      backendSocketUrl(`/ws/events/${encodeURIComponent(establishmentId)}`)
         .then((url) => {
           if (closed) return;
           socket = new WebSocket(url);

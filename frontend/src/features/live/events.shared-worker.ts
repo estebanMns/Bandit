@@ -41,7 +41,7 @@ function retry(establishmentId: string, channel: Channel): void {
 async function connect(establishmentId: string, channel: Channel): Promise<void> {
   let url: string;
   try {
-    url = await backendSocketUrl(`/ws/events/${establishmentId}`);
+    url = await backendSocketUrl(`/ws/events/${encodeURIComponent(establishmentId)}`);
   } catch {
     if (channel.ports.size > 0) retry(establishmentId, channel);
     return;
