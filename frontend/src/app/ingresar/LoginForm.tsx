@@ -50,7 +50,8 @@ export function LoginForm() {
   }
 
   return (
-    <form className={styles.formulario} onSubmit={submit}>
+    // method="post": si el JavaScript no carga, la clave nunca queda en la dirección.
+    <form className={styles.formulario} method="post" onSubmit={submit}>
       {justRegistered && (
         <p className={styles.exitoAviso} role="status">
           <strong>Cuenta creada.</strong> Ingresa para empezar a configurar tu local.
