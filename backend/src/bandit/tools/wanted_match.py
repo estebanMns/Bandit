@@ -17,10 +17,14 @@ Uso, dentro del contenedor del backend:
     python -m bandit.tools.wanted_match probar --nombre "Nombre" --fotos /app/var/rostros \\
         --local "donpancho" [--camara "camara principal" --minutos 3]
     python -m bandit.tools.wanted_match quitar --nombre "Nombre"
+
+Con FACE_WATCH_ENABLED=true el backend además compara en vivo, en cada cámara, a quien
+aparezca con las personas agregadas aquí, y muestra cada resultado en Actividad.
 """
 
 import argparse
 import asyncio
+import shutil
 import sys
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -29,16 +33,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID, uuid4
 
+from bandit.bootstrap import WANTED_MATCH as INCIDENT_TYPE
+from bandit.bootstrap import describe_face_match as describe_match
 from bandit.tools.face_demo import FaceComparer, load_images
 from bandit.tools.simulate_alert import TEST_CAMERA_NAME, photo_camera_id
 
-INCIDENT_TYPE = "wanted_match"
 MATCH_THRESHOLD = 0.8
 TEST_CRIME = "Homicidio, secuestro y terrorismo (registro de prueba local)"
 TEST_REWARD = "HASTA 10.000 SMLMV"
 TEST_ALIAS = "Registro de prueba"
 _MAX_REFERENCES = 3
-_DESCRIPTION_LIMIT = 300
 _PHOTO_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
 
 
@@ -49,14 +53,6 @@ class MatchReport:
     confidence: float
     explanation: str
     alerted: bool
-
-
-def describe_match(person: str, confidence: float, explanation: str) -> str:
-    text = (
-        f"Coincidencia con {person}, de la lista de buscados (registro de prueba), "
-        f"{confidence:.0%}: {explanation}"
-    )
-    return text[:_DESCRIPTION_LIMIT]
 
 
 async def watch(
@@ -106,6 +102,10 @@ async def _from_stream(
             yield datetime.now(UTC).astimezone().strftime("cámara %H:%M:%S"), jpeg
 
 
+def _references_folder(media_root: str, slug: str) -> Path:
+    return Path(media_root) / "faces" / slug
+
+
 async def _add(name: str, root: Path) -> int:
     from bandit.bootstrap import build_application
     from bandit.shared.config import get_settings
@@ -119,7 +119,8 @@ async def _add(name: str, root: Path) -> int:
     if not photos:
         print(f"Pon fotos en {root / 'referencia'}.")
         return 1
-    app = build_application(get_settings())
+    settings = get_settings()
+    app = build_application(settings)
     try:
         record = await app.directory.local_tests.add(
             name,
@@ -132,6 +133,12 @@ async def _add(name: str, root: Path) -> int:
         )
     finally:
         await app.engine.dispose()
+    # Las fotos de referencia que usa la prueba de rostros en vivo.
+    references = _references_folder(settings.media_root, record.slug)
+    shutil.rmtree(references, ignore_errors=True)
+    references.mkdir(parents=True)
+    for index, photo in enumerate(photos[:_MAX_REFERENCES], start=1):
+        shutil.copyfile(photo, references / f"referencia-{index}{photo.suffix.lower()}")
     print(f"'{record.name}' quedó primero en el directorio: {record.reward} · {record.crime}.")
     print("Revisa la página Directorio (puede tardar unos segundos en actualizarse).")
     return 0
@@ -139,13 +146,16 @@ async def _add(name: str, root: Path) -> int:
 
 async def _remove(name: str) -> int:
     from bandit.bootstrap import build_application
+    from bandit.directory.domain.models import slugify
     from bandit.shared.config import get_settings
 
-    app = build_application(get_settings())
+    settings = get_settings()
+    app = build_application(settings)
     try:
         removed = await app.directory.local_tests.remove(name)
     finally:
         await app.engine.dispose()
+    shutil.rmtree(_references_folder(settings.media_root, slugify(name)), ignore_errors=True)
     print(
         "Registro de prueba retirado."
         if removed
