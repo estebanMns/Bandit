@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { FromSharedWorker, ServerEvent, ToSharedWorker } from "./protocol";
+import { backendSocketUrl } from "./socket-url";
 
 interface LiveConnection {
   connected: boolean;
@@ -24,13 +25,22 @@ export function useLiveEvents(
     if (!establishmentId) return;
 
     if (typeof SharedWorker === "undefined") {
-      const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-      const socket = new WebSocket(`${protocol}//${location.host}/ws/events/${establishmentId}`);
-      socket.onopen = () => setConnection({ connected: true, tabs: 1 });
-      socket.onclose = () => setConnection({ connected: false, tabs: 1 });
-      socket.onmessage = (event: MessageEvent<string>) =>
-        handler.current(JSON.parse(event.data) as ServerEvent);
-      return () => socket.close();
+      let socket: WebSocket | null = null;
+      let closed = false;
+      backendSocketUrl(`/ws/events/${establishmentId}`)
+        .then((url) => {
+          if (closed) return;
+          socket = new WebSocket(url);
+          socket.onopen = () => setConnection({ connected: true, tabs: 1 });
+          socket.onclose = () => setConnection({ connected: false, tabs: 1 });
+          socket.onmessage = (event: MessageEvent<string>) =>
+            handler.current(JSON.parse(event.data) as ServerEvent);
+        })
+        .catch(() => setConnection({ connected: false, tabs: 1 }));
+      return () => {
+        closed = true;
+        socket?.close();
+      };
     }
 
     const worker = new SharedWorker(new URL("./events.shared-worker.ts", import.meta.url), {

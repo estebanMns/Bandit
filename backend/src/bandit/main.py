@@ -15,6 +15,7 @@ from bandit.directory.domain.models import SyncTrigger
 from bandit.establishments.api.routes import router as establishments_router
 from bandit.faces.api.routes import router as faces_router
 from bandit.identity.api.routes import router as identity_router
+from bandit.identity.api.ws_tickets import WsTickets, parse_origins
 from bandit.incidents.api.routes import router as incidents_router
 from bandit.notifications.api.routes import router as notifications_router
 from bandit.places.api.routes import router as places_router
@@ -61,6 +62,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="Bandit", lifespan=lifespan)
     app.state.identity = application.identity
+    app.state.ws_tickets = WsTickets(parse_origins(resolved.ws_allowed_origins))
     app.state.establishments = application.establishments
     app.state.cameras = application.cameras
     app.state.analysis = application.analysis

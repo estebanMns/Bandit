@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     session_ttl_hours: int = Field(default=12, ge=1)
     camera_encryption_key: str = ""
     cookie_secure: bool = False
+    # Orígenes extra que pueden abrir WebSockets, separados por coma (p. ej. el dominio de
+    # Vercel). Vacío = solo el mismo dominio del backend, como detrás de Caddy.
+    ws_allowed_origins: str = ""
     bootstrap_admin_email: str = ""
     bootstrap_admin_password: str = ""
     # Solo para pruebas: crea la cuenta admin/admin. Apágalo en un local real.

@@ -15,6 +15,7 @@ from bandit.identity.api.deps import (
     _module,
     require_csrf,
 )
+from bandit.identity.api.ws_tickets import WsTickets
 from bandit.identity.domain.models import Role, User
 from bandit.identity.module import IdentityModule
 
@@ -130,6 +131,18 @@ async def auth_options(module: Module) -> AuthOptionsResponse:
 @router.get("/me")
 async def me(user: CurrentUser) -> UserResponse:
     return UserResponse.of(user)
+
+
+class WsTicketResponse(BaseModel):
+    ticket: str
+
+
+@router.get("/ws-ticket")
+async def ws_ticket(request: Request, response: Response, _: CurrentUser) -> WsTicketResponse:
+    """Ticket de un minuto para abrir WebSockets cuando el frontend está en otro dominio."""
+    tickets: WsTickets = request.app.state.ws_tickets
+    response.headers["Cache-Control"] = "no-store"
+    return WsTicketResponse(ticket=tickets.issue(request.cookies[SESSION_COOKIE]))
 
 
 @router.post("/users", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_csrf)])

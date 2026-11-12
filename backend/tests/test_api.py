@@ -216,6 +216,35 @@ def test_sockets_reject_foreign_origins(client: TestClient) -> None:
         pass
 
 
+def test_ws_ticket_opens_sockets_from_an_allowed_origin(client: TestClient) -> None:
+    headers = login(client)
+    local = create_local(client, headers)
+    client.app.state.ws_tickets.allowed_origins.add("https://bandit.vercel.app")  # type: ignore[attr-defined]
+    ticket = client.get("/api/auth/ws-ticket").json()["ticket"]
+    client.cookies.clear()
+
+    with client.websocket_connect(
+        f"/ws/events/{local}?ticket={ticket}", headers={"Origin": "https://bandit.vercel.app"}
+    ) as socket:
+        assert socket.receive_json() == {"type": "sync"}
+
+
+def test_ws_ticket_requires_a_session(client: TestClient) -> None:
+    assert client.get("/api/auth/ws-ticket").status_code == 401
+
+
+def test_forged_ws_ticket_is_rejected(client: TestClient) -> None:
+    headers = login(client)
+    local = create_local(client, headers)
+    client.cookies.clear()
+
+    with (
+        pytest.raises(WebSocketDisconnect),
+        client.websocket_connect(f"/ws/events/{local}?ticket=falso"),
+    ):
+        pass
+
+
 def test_video_socket_rejects_unknown_cameras(client: TestClient) -> None:
     login(client)
 

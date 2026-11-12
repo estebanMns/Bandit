@@ -2,6 +2,7 @@
 
 import { FrameRing, MAX_FRAME_HEIGHT, MAX_FRAME_WIDTH } from "./frameRing";
 import type { FromWorker, ToWorker } from "./protocol";
+import { backendSocketUrl } from "../live/socket-url";
 
 /** Decodifica JPEG fuera del hilo principal para que la interfaz nunca se trabe. */
 
@@ -11,6 +12,8 @@ const METRICS_INTERVAL_MS = 1_000;
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 
 let socket: WebSocket | null = null;
+// Cada start/stop invalida las conexiones que aún esperaban su ticket.
+let generation = 0;
 let ring: FrameRing | null = null;
 let retryTimer: ReturnType<typeof setTimeout> | undefined;
 let retryDelay = 1_000;
@@ -50,10 +53,24 @@ async function decode(jpeg: ArrayBuffer): Promise<void> {
   }
 }
 
-function connect(cameraId: string): void {
+function scheduleRetry(cameraId: string): void {
+  send({ type: "state", state: "sin-senal" });
+  retryTimer = setTimeout(() => void connect(cameraId), retryDelay);
+  retryDelay = Math.min(retryDelay * 2, MAX_RETRY_MS);
+}
+
+async function connect(cameraId: string): Promise<void> {
   send({ type: "state", state: "conectando" });
-  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  const connection = new WebSocket(`${protocol}//${location.host}/ws/video/${cameraId}`);
+  const attempt = generation;
+  let url: string;
+  try {
+    url = await backendSocketUrl(`/ws/video/${cameraId}`);
+  } catch {
+    if (!stopped && attempt === generation) scheduleRetry(cameraId);
+    return;
+  }
+  if (stopped || attempt !== generation) return;
+  const connection = new WebSocket(url);
   connection.binaryType = "arraybuffer";
   socket = connection;
 
@@ -64,9 +81,7 @@ function connect(cameraId: string): void {
   };
   connection.onclose = () => {
     if (stopped) return;
-    send({ type: "state", state: "sin-senal" });
-    retryTimer = setTimeout(() => connect(cameraId), retryDelay);
-    retryDelay = Math.min(retryDelay * 2, MAX_RETRY_MS);
+    scheduleRetry(cameraId);
   };
 }
 
@@ -77,10 +92,11 @@ setInterval(() => {
 
 scope.onmessage = (event: MessageEvent<ToWorker>) => {
   const message = event.data;
+  generation += 1;
   if (message.type === "start") {
     stopped = false;
     ring = message.ring ? new FrameRing(message.ring) : null;
-    connect(message.cameraId);
+    void connect(message.cameraId);
     return;
   }
   stopped = true;
