@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     vapid_subject: str = "mailto:admin@example.com"
 
     directory_scrape_interval_hours: int = Field(default=24, ge=1)
+    # Salario mínimo legal mensual en pesos, para recompensas publicadas en SMLMV.
+    smlmv_cop: int = Field(default=1_423_500, ge=1)
     revalidate_secret: str = ""
     frontend_internal_url: str = "http://frontend:3000"
     media_root: str = "./var/media"
