@@ -3,13 +3,12 @@
   /* La columna no crece con su contenido: evita que las fichas se salgan de la página. */
   grid-template-columns: minmax(0, 1fr);
   gap: var(--e-6);
-  width: min(100% - 2 * var(--e-6), 72rem);
-  margin: var(--e-8) auto var(--e-12);
+  width: 100%;
+  max-width: none;
+  margin: 0 auto;
 }
 
 .contenedor {
-  min-height: 100dvh;
-  background: var(--fondo);
   color: var(--texto);
 }
 
@@ -21,7 +20,7 @@
 
 .aviso {
   padding: var(--e-3) var(--e-4);
-  border-left: 4px solid var(--noche);
+  border-left: 4px solid var(--accion);
   background: var(--superficie);
 }
 
@@ -131,12 +130,14 @@
   display: grid;
   gap: var(--e-2);
   padding: var(--e-4);
-  background: var(--noche);
-  color: var(--hielo);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  background: var(--superficie);
+  color: var(--texto);
 }
 
 .reporte a {
-  color: var(--sodio);
+  color: var(--accion);
   font-weight: 700;
 }
 
@@ -194,8 +195,8 @@
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
-  background: var(--noche);
-  color: var(--sodio);
+  background: var(--accion);
+  color: var(--sobre-accion);
   font-family: var(--fuente-titulo);
   font-weight: 800;
 }
