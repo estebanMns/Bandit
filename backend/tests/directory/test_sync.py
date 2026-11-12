@@ -168,3 +168,37 @@ async def test_partial_run_publishes_but_never_retires(sessions, clock, media, r
     assert sorted(names) == ["Ana Ejemplo", "Beto Ejemplo"]
     ana = await module.get.execute("ana-ejemplo")
     assert (ana.reward_amount, ana.listing_position) == (10_000_000, 3)
+
+
+async def test_a_local_test_record_survives_every_sync(sessions, clock, media, revalidator):
+    module = build(sessions, clock, media, revalidator, ["Ana Ejemplo"])
+    await module.local_tests.add(
+        "Persona Prueba", "Prueba", "Homicidio", "HASTA 10.000 SMLMV", None, b"foto", ".jpg"
+    )
+
+    report = await module.sync.execute()
+
+    record = await module.get.execute("persona-prueba")
+    assert report.retired == 0
+    assert record.local_test
+    assert (await module.list_active.execute())[0].name == "Persona Prueba"
+
+
+async def test_a_local_test_never_replaces_a_police_record(sessions, clock, media, revalidator):
+    module = build(sessions, clock, media, revalidator, ["Ana Ejemplo"])
+    await module.sync.execute()
+
+    with pytest.raises(ValueError):
+        await module.local_tests.add("Ana Ejemplo", None, "Hurto", "1 millón", None, b"f", ".jpg")
+    assert await module.local_tests.remove("Ana Ejemplo") is False
+
+
+async def test_removing_a_local_test_hides_it_and_its_photo(sessions, clock, media, revalidator):
+    module = build(sessions, clock, media, revalidator, [])
+    await module.local_tests.add("Persona Prueba", None, "Hurto", "1 millón", None, b"f", ".jpg")
+
+    assert await module.local_tests.remove("Persona Prueba") is True
+
+    with pytest.raises(NotFoundError):
+        await module.get.execute("persona-prueba")
+    assert media.path_of("persona-prueba.jpg") is None
