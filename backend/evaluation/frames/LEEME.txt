@@ -1,0 +1,17 @@
+Fotos para probar las alertas de Bandit. Esta carpeta NUNCA se sube a GitHub (.gitignore).
+
+Pon fotos .jpg en la carpeta de la situación que muestran:
+
+  none/      Escena tranquila: alguien de pie, sentado, caminando.
+  weapon/    Alguien sosteniendo algo que parezca un arma (un juguete u objeto que lo simule).
+  robbery/   Alguien amenazando o arrebatando algo a otra persona.
+  fight/     Dos personas forcejeando o empujándose.
+  fire/      Fuego o humo visibles.
+  medical/   Una persona tendida o desmayada en el piso.
+
+Usa al menos 2 fotos por situación (Bandit exige 2 detecciones seguidas para alertar).
+Bandit detecta situaciones; nunca identifica a las personas de las fotos.
+
+Para probar (desde la carpeta Bandit):
+  docker compose cp backend/evaluation/frames backend:/app/var/pruebas
+  docker compose exec backend python -m bandit.tools.simulate_alert /app/var/pruebas/weapon --local "TU LOCAL"

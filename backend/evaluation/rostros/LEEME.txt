@@ -1,0 +1,12 @@
+Demostracion educativa. Esta carpeta NUNCA se sube a GitHub (.gitignore).
+
+referencia/  3 o 4 fotos tuyas, con la cara bien visible (.jpg).
+prueba/      fotos para comprobar: algunas tuyas y otras de otra persona o sin nadie.
+
+Para probar (desde la carpeta Bandit):
+  docker compose cp backend/evaluation/rostros backend:/app/var/rostros
+  docker compose exec backend python -m bandit.tools.face_demo /app/var/rostros
+
+Nada se guarda en la base de datos ni se envia. La alerta sale solo en la consola.
+Para borrar las fotos del contenedor al terminar:
+  docker compose exec backend rm -rf /app/var/rostros
