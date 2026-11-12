@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api";
 import { confirmIncident, discardIncident } from "./api";
+import { EvidenceImage } from "./EvidenceImage";
 import { formatTime, situationLabel, STATUS_LABELS } from "./labels";
 import type { Incident } from "./types";
 import styles from "./DecisionPanel.module.css";
@@ -60,10 +61,9 @@ export function DecisionPanel({ incident, caiNumber, onChange }: DecisionPanelPr
         </p>
       </div>
 
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <EvidenceImage
         className={styles.evidencia}
-        src={`/api/incidents/${incident.id}/evidence`}
+        incidentId={incident.id}
         alt={`Fotograma de ${incident.camera_name}: ${incident.description}`}
       />
       <p>{incident.description}</p>
