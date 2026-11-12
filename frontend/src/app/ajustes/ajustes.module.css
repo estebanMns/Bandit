@@ -1,8 +1,9 @@
 .pagina {
   display: grid;
-  gap: var(--e-8);
-  width: min(100% - 2 * var(--e-6), 44rem);
-  margin: var(--e-8) auto var(--e-12);
+  gap: 14px;
+  width: 100%;
+  max-width: 64rem;
+  margin: 0 auto;
 }
 
 .titulo {
@@ -14,6 +15,7 @@
 .seccion {
   display: grid;
   gap: var(--e-4);
+  padding: 18px 20px;
 }
 
 .seccion h2 {
@@ -56,9 +58,9 @@
 }
 
 .confirmacion {
-  color: var(--agua);
+  color: var(--ok);
 }
 
 .error {
-  color: var(--baliza);
+  color: var(--sev-critico);
 }
