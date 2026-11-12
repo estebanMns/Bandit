@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import { api } from "@/lib/api";
+import { clearCache } from "@/lib/cache";
 import styles from "./ControlShell.module.css";
 
 function subscribe() {
@@ -21,6 +22,7 @@ export function LogoutButton() {
 
   async function logout() {
     await api("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+    clearCache();
     router.replace("/ingresar");
   }
 
