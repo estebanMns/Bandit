@@ -79,6 +79,7 @@ export function ControlCenter() {
   return (
     <ControlShell
       title="Resumen global"
+      heading
       actions={
         <button
           type="button"
