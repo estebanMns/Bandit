@@ -10,6 +10,7 @@ from uuid import uuid4
 from bandit.directory.application.tools import SOURCE_URL, ScrapingTools
 from bandit.directory.domain.models import (
     DEFAULT_SMLMV_COP,
+    LOCAL_TEST_SOURCE,
     ExtractedRecord,
     SyncReport,
     WantedRecord,
@@ -93,7 +94,7 @@ class SyncDirectory:
         retired = 0
         if complete:
             for slug, record in current.items():
-                if slug not in published:
+                if slug not in published and not record.local_test:
                     await self._retire(record)
                     retired += 1
 
@@ -156,3 +157,75 @@ class SyncDirectory:
             if name:
                 await self._media.delete(name)
         await self._records.upsert(replace(record, active=False, photo_file=None, flyer_file=None))
+
+
+class LocalTestRecords:
+    """Registros de prueba creados a mano en este equipo.
+
+    Llevan la fuente LOCAL_TEST_SOURCE, así que la sincronización con la Policía nunca los
+    retira ni los pisa con datos publicados.
+    """
+
+    def __init__(
+        self,
+        records: WantedRepository,
+        media: MediaStore,
+        revalidator: SiteRevalidator,
+        clock: Clock,
+        smlmv_cop: int = DEFAULT_SMLMV_COP,
+    ) -> None:
+        self._records = records
+        self._media = media
+        self._revalidator = revalidator
+        self._clock = clock
+        self._smlmv_cop = smlmv_cop
+
+    async def add(
+        self,
+        name: str,
+        alias: str | None,
+        crime: str,
+        reward: str,
+        region: str | None,
+        photo: bytes,
+        photo_suffix: str,
+    ) -> WantedRecord:
+        suffix = photo_suffix.lower()
+        if suffix not in _ALLOWED_PHOTO_SUFFIXES:
+            raise ValueError("La foto debe ser .jpg, .jpeg, .png o .webp")
+        slug = slugify(name)
+        existing = await self._records.get_active(slug)
+        if existing is not None and not existing.local_test:
+            raise ValueError("Ya hay un registro publicado por la Policía con ese nombre")
+        now = self._clock.now()
+        photo_file = f"{slug}{suffix}"
+        await self._media.save(photo_file, photo)
+        record = WantedRecord(
+            id=existing.id if existing else uuid4(),
+            slug=slug,
+            name=name,
+            alias=alias,
+            crime=crime,
+            reward=reward,
+            region=region,
+            hotline_email=None,
+            photo_file=photo_file,
+            source_url=LOCAL_TEST_SOURCE,
+            first_seen_at=existing.first_seen_at if existing else now,
+            last_seen_at=now,
+            reward_amount=parse_reward(reward, self._smlmv_cop),
+            listing_position=0,
+        )
+        await self._records.upsert(record)
+        await self._revalidator.revalidate()
+        return record
+
+    async def remove(self, name: str) -> bool:
+        record = await self._records.get_active(slugify(name))
+        if record is None or not record.local_test:
+            return False
+        if record.photo_file:
+            await self._media.delete(record.photo_file)
+        await self._records.upsert(replace(record, active=False, photo_file=None))
+        await self._revalidator.revalidate()
+        return True
