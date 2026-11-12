@@ -54,7 +54,7 @@ export default function CamerasPage() {
         {!loading && !current && <p>Crea primero tu local en la sección Local.</p>}
 
         {current && (
-          <section className={styles.seccion}>
+          <section className={`vidrio ${styles.seccion}`}>
             <h2>Buscar cámaras en tu red</h2>
             <p className={styles.ayuda}>
               Bandit revisa los equipos de tu Wi-Fi, prueba las rutas de video conocidas de cada
@@ -69,7 +69,7 @@ export default function CamerasPage() {
         )}
 
         {current && (
-          <section className={styles.seccion}>
+          <section className={`vidrio ${styles.seccion}`}>
             <h2>Agregar cámara a mano</h2>
             <form className={styles.formulario} onSubmit={add}>
               <Field label="Nombre" name="name" placeholder="Barra principal" required />
@@ -88,7 +88,7 @@ export default function CamerasPage() {
         )}
 
         {cameras.length > 0 && (
-          <section className={styles.seccion}>
+          <section className={`vidrio ${styles.seccion}`}>
             <h2>Cámaras de {current?.name}</h2>
             <ul className={styles.lista}>
               {cameras.map((camera) => (
