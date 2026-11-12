@@ -7,6 +7,7 @@ import { Field } from "@/components/ui/Field";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { REGISTERED_EMAIL_KEY } from "@/features/onboarding/signup";
 import { api, ApiError } from "@/lib/api";
+import { clearCache } from "@/lib/cache";
 import styles from "./page.module.css";
 
 export function LoginForm() {
@@ -42,6 +43,8 @@ export function LoginForm() {
         method: "POST",
         body: JSON.stringify({ email: data.get("email"), password: data.get("password") }),
       });
+      // Otra sesión: nada de lo guardado del usuario anterior sirve.
+      clearCache();
       router.push("/panel");
     } catch (failure) {
       setError(failure instanceof ApiError ? failure.message : "No hay conexión con el servidor.");
