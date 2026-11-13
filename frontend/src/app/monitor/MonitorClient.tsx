@@ -22,10 +22,13 @@ export function MonitorClient() {
   useEffect(() => {
     if (!current) return;
     let active = true;
-    listCameras(current.id).then((loaded) => {
-      if (!active) return;
-      setCameras(loaded.filter((camera) => camera.enabled));
-    });
+    listCameras(current.id)
+      .then((loaded) => {
+        if (active) setCameras(loaded.filter((camera) => camera.enabled));
+      })
+      .catch(() => {
+        if (active) setCameras([]);
+      });
     return () => {
       active = false;
     };
