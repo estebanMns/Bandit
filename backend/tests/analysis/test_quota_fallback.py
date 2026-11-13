@@ -23,15 +23,15 @@ class Models:
         return SimpleNamespace(text=CALM)
 
 
-def analyzer(models: Models, fallback: str = "respaldo") -> GeminiSceneAnalyzer:
-    instance = GeminiSceneAnalyzer("clave", "principal", "low", fallback_model=fallback)
+def analyzer(models: Models, *fallbacks: str) -> GeminiSceneAnalyzer:
+    instance = GeminiSceneAnalyzer("clave", "principal", "low", fallback_models=fallbacks)
     instance._client = SimpleNamespace(aio=SimpleNamespace(models=models))  # type: ignore[assignment]
     return instance
 
 
 async def test_switches_to_the_fallback_and_stays_there_for_a_while():
     models = Models(exhausted={"principal"})
-    scene = analyzer(models)
+    scene = analyzer(models, "respaldo")
 
     first = await scene.assess(b"jpeg")
     await scene.assess(b"jpeg")
@@ -42,7 +42,24 @@ async def test_switches_to_the_fallback_and_stays_there_for_a_while():
 
 
 async def test_without_fallback_the_quota_error_is_raised():
-    scene = analyzer(Models(exhausted={"principal"}), fallback="")
+    scene = analyzer(Models(exhausted={"principal"}))
+
+    with pytest.raises(errors.ClientError):
+        await scene.assess(b"jpeg")
+
+
+async def test_with_several_fallbacks_it_keeps_going_until_one_has_quota():
+    models = Models(exhausted={"principal", "respaldo"})
+    scene = analyzer(models, "respaldo", "otro")
+
+    await scene.assess(b"jpeg")
+
+    assert models.used == ["principal", "respaldo", "otro"]
+    assert scene.active_model == "otro"
+
+
+async def test_when_every_model_is_out_of_quota_the_error_is_raised():
+    scene = analyzer(Models(exhausted={"principal", "respaldo"}), "respaldo")
 
     with pytest.raises(errors.ClientError):
         await scene.assess(b"jpeg")
