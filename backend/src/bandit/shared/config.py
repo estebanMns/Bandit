@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.8-flash"
     # Opcional: otro modelo solo para extraer el directorio, por ejemplo uno menos saturado.
     gemini_directory_model: str = ""
+    # Modelos de respaldo, separados por coma: si uno se queda sin cuota se usa el siguiente.
+    gemini_fallback_models: str = "gemini-3.5-flash-lite"
     gemini_media_resolution: str = "high"
     gemini_max_concurrency: int = Field(default=4, ge=1)
     analysis_min_interval_seconds: float = Field(default=10, gt=0)
