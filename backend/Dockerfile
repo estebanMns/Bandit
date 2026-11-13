@@ -5,9 +5,12 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY pyproject.toml ./
+# Versiones exactas con su huella (requirements.txt). Todo llega ya compilado salvo los dos
+# paquetes de notificaciones push, que solo se publican como código fuente.
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --require-hashes --only-binary :all:     --no-binary pywebpush --no-binary http-ece -r requirements.txt
 COPY src ./src
-RUN pip install --no-cache-dir .
+ENV PYTHONPATH=/app/src
 
 COPY alembic.ini ./
 COPY migrations ./migrations

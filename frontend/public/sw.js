@@ -39,7 +39,8 @@ async function staleWhileRevalidate(request) {
   const cached = await cache.match(request);
   const network = fetch(request)
     .then((response) => {
-      if (response.ok) cache.put(request, response.clone());
+      // Si no se puede guardar (cuota llena), la respuesta igual llega al usuario.
+      if (response.ok) cache.put(request, response.clone()).catch(() => undefined);
       return response;
     })
     .catch(() => cached ?? caches.match(OFFLINE_URL));
@@ -50,7 +51,10 @@ async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) return cached;
   const response = await fetch(request);
-  if (response.ok) (await caches.open(STATIC_CACHE)).put(request, response.clone());
+  if (response.ok) {
+    const cache = await caches.open(STATIC_CACHE);
+    await cache.put(request, response.clone()).catch(() => undefined);
+  }
   return response;
 }
 

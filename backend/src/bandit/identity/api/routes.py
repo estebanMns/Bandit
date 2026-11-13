@@ -72,7 +72,9 @@ def _set_session_cookies(response: Response, module: IdentityModule, token: str)
         samesite="lax",
         path="/",
     )
-    response.set_cookie(
+    # Doble envío contra CSRF: el navegador debe poder leer esta cookie para copiarla en la
+    # cabecera X-CSRF-Token. No es la sesión (esa sí es HttpOnly) y sola no da acceso.
+    response.set_cookie(  # NOSONAR
         CSRF_COOKIE,
         secrets.token_urlsafe(32),
         max_age=max_age,

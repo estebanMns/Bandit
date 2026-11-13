@@ -11,12 +11,17 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    env:
+      PYTHONPATH: src
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -e ".[dev]"
+      # Versiones exactas con huella; solo pywebpush y http-ece se publican como código fuente.
+      - run: >-
+          pip install --require-hashes --only-binary :all:
+          --no-binary pywebpush --no-binary http-ece -r requirements-dev.txt
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy
@@ -35,7 +40,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test

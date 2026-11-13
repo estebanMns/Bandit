@@ -26,8 +26,8 @@ cd "$DIR"
 
 if [[ ! -x ./mediamtx ]]; then
     echo "Descargando MediaMTX ${VERSION}..."
-    curl -fsSL -o "$ARCHIVE" "https://github.com/bluenviron/mediamtx/releases/download/${VERSION}/${ARCHIVE}"
-    if [ "$(checksum "$ARCHIVE" | awk '{print $1}')" != "$SHA256" ]; then
+    curl -fsSL --proto '=https' --tlsv1.2 -o "$ARCHIVE" "https://github.com/bluenviron/mediamtx/releases/download/${VERSION}/${ARCHIVE}"
+    if [[ "$(checksum "$ARCHIVE" | awk '{print $1}')" != "$SHA256" ]]; then
         echo "La descarga no coincide con el checksum oficial."; rm -f "$ARCHIVE"; exit 1
     fi
     tar -xzf "$ARCHIVE" mediamtx
@@ -89,7 +89,7 @@ paths:
 YAML
 chmod 600 mediamtx.yml
 
-if [ "$(uname -s)" = "Linux" ]; then
+if [[ "$(uname -s)" == "Linux" ]]; then
     if command -v ufw >/dev/null && sudo -n ufw status 2>/dev/null | grep -q "Status: active"; then
         sudo ufw allow 8554/tcp >/dev/null
     fi
