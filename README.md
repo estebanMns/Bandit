@@ -110,18 +110,44 @@ pedir una manual desde **Actividad IA**, como máximo cada 30 minutos. El regist
 | Web Push | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No aparece la opción de notificaciones |
 | Cámaras Imou por su nube | `IMOU_APP_ID`, `IMOU_APP_SECRET`, `IMOU_API_URL` | Solo se pueden usar cámaras `rtsp://` |
 
-### Plantilla de WhatsApp
+### Configurar WhatsApp
 
-Crea en Meta una plantilla de utilidad llamada `bandit_incidente`, en español y con este cuerpo:
+Bandit avisa al CAI por la **WhatsApp Cloud API de Meta**, y solo cuando una persona confirma un
+evento ("Confirmar y avisar al CAI" en el Monitor o en Eventos). Sin configurarla, el evento
+queda en "Falló el aviso" y no sale nada.
 
-```text
-Alerta de {{1}}, ubicado en {{2}}.
-Situación: {{3}}. Hora: {{4}}.
-Detalle: {{5}}.
-Mensaje confirmado por el personal del local.
-```
+1. En <https://developers.facebook.com> crea una app de tipo **Business** y agrégale el producto
+   **WhatsApp**. Meta te da un número de prueba gratis.
+2. En **WhatsApp → API Setup** copia el **Phone number ID**.
+3. Crea un **token permanente** (el del panel dura 24 horas): en
+   <https://business.facebook.com> → Configuración del negocio → **Usuarios del sistema** → crea
+   uno de tipo administrador, asígnale la app y genera un token con los permisos
+   `whatsapp_business_messaging` y `whatsapp_business_management`.
+4. En **WhatsApp → Message templates** crea la plantilla `bandit_incidente`, categoría
+   **Utilidad**, idioma español, con este cuerpo, y envíala a aprobación:
 
-Acuerda con el CAI el uso de su número antes de registrarlo.
+   ```text
+   Alerta de {{1}}, ubicado en {{2}}.
+   Situación: {{3}}. Hora: {{4}}.
+   Detalle: {{5}}.
+   Mensaje confirmado por el personal del local.
+   ```
+
+5. Con el número de prueba, Meta solo entrega a números autorizados: en **API Setup → To**
+   agrega el número que hará de CAI y confírmalo con el código que llega por WhatsApp.
+6. Pon los valores en `.env` (nunca en git ni en un chat) y reinicia el backend:
+
+   ```bash
+   WHATSAPP_ACCESS_TOKEN=<token permanente>
+   WHATSAPP_PHONE_NUMBER_ID=<phone number id>
+   docker compose up -d backend
+   ```
+
+7. En **Ajustes del local**, guarda el número como "WhatsApp del CAI" y usa **Enviar mensaje de
+   prueba**: debe llegar un WhatsApp que dice "No hay ninguna emergencia".
+
+Para probar, usa tu propio celular como "CAI". Acuerda con el CAI el uso de su número antes de
+registrar el real.
 
 ### Cámara Imou sin acceso por la red local
 
