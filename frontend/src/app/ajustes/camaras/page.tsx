@@ -22,7 +22,10 @@ export default function CamerasPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (current) listCameras(current.id).then(setCameras);
+    if (!current) return;
+    listCameras(current.id)
+      .then(setCameras)
+      .catch(() => setCameras([]));
   }, [current]);
 
   async function run(action: () => Promise<unknown>) {
