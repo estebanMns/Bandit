@@ -23,6 +23,8 @@ import { StatCard, useClock } from "./widgets";
 const SLOTS = 4;
 
 /** Centro de control: lo primero que se ve al ingresar. Todo con datos reales de Bandit. */
+const CAMERA_REFRESH_MS = 20_000;
+
 export function ControlCenter() {
   const { text: clock, now } = useClock();
   const { current, loading, reload } = useEstablishment();
@@ -41,12 +43,20 @@ export function ControlCenter() {
   }, []);
 
   const loadCameras = useCallback(async () => {
-    if (current) setCameras(await listCameras(current.id));
+    if (!current) return;
+    try {
+      setCameras(await listCameras(current.id));
+    } catch {
+      // Se conserva la última lista conocida; el próximo intento la actualiza.
+    }
   }, [current]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadCameras();
+    // El estado y el motivo de cada cámara cambian en el servidor: se revisan cada 20 s.
+    const timer = setInterval(() => void loadCameras(), CAMERA_REFRESH_MS);
+    return () => clearInterval(timer);
   }, [loadCameras]);
 
   const report = useCallback((id: string, value: { live: boolean; fps: number }) => {
@@ -176,6 +186,7 @@ export function ControlCenter() {
                   <CameraView
                     cameraId={camera.id}
                     name={camera.name}
+                    problem={camera.problem}
                     bare
                     onMetrics={(value) => report(camera.id, value)}
                   />
