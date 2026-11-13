@@ -43,7 +43,12 @@ export default async function WantedPage({ params }: PageProps) {
       <div className={styles.detalle}>
         {record.photo_url && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={record.photo_url} alt={`Foto publicada de ${record.name}`} className={styles.foto} />
+          <img
+            src={record.photo_url}
+            alt={`Foto publicada de ${record.name}`}
+            decoding="async"
+            className={styles.foto}
+          />
         )}
         <div className={styles.pagina}>
           <h1 className={styles.titulo}>{record.name}</h1>

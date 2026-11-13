@@ -34,7 +34,13 @@ export function DirectoryBrowser({ records }: { records: WantedRecord[] }) {
                   <span className={styles.puesto}>{index + 1}</span>
                   {record.photo_url && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={record.photo_url} alt="" className={styles.fotoPrioridad} />
+                    <img
+                      src={record.photo_url}
+                      alt=""
+                      decoding="async"
+                      fetchPriority={index < 3 ? "high" : "auto"}
+                      className={styles.fotoPrioridad}
+                    />
                   )}
                   <span className={styles.nombre}>{record.name}</span>
                   <span className={styles.recompensa}>{formatReward(record)}</span>
@@ -86,7 +92,13 @@ export function DirectoryBrowser({ records }: { records: WantedRecord[] }) {
               <Link href={`/directorio/${record.slug}`} className={styles.ficha}>
                 {record.photo_url && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={record.photo_url} alt="" loading="lazy" className={styles.foto} />
+                  <img
+                    src={record.photo_url}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className={styles.foto}
+                  />
                 )}
                 <span className={styles.nombre}>{record.name}</span>
                 {record.alias && <span>Alias {record.alias}</span>}

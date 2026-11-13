@@ -73,10 +73,17 @@ class FakeModels:
         return SimpleNamespace(parsed=parsed, text=None)
 
 
+async def _no_wait(seconds: float) -> None:
+    """Los reintentos esperan en producción; en las pruebas no se espera."""
+
+
 def agent_with(models: FakeModels) -> GeminiDirectoryAgent:
-    agent = GeminiDirectoryAgent("clave-de-prueba", "modelo")
-    agent._client = SimpleNamespace(aio=SimpleNamespace(models=models))  # type: ignore[assignment]
-    return agent
+    return GeminiDirectoryAgent(
+        "clave-de-prueba",
+        "modelo",
+        client=SimpleNamespace(aio=SimpleNamespace(models=models)),
+        sleep=_no_wait,
+    )
 
 
 async def test_pages_until_a_page_brings_nothing_new():

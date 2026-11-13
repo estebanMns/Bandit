@@ -1,7 +1,9 @@
 """Punto de entrada ASGI."""
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
@@ -22,6 +24,8 @@ from bandit.places.api.routes import router as places_router
 from bandit.realtime.api.routes import router as realtime_router
 from bandit.shared.config import Settings, get_settings
 from bandit.shared.http import install_error_handlers
+
+logger = logging.getLogger(__name__)
 
 
 def _build_scheduler(application: Application, settings: Settings) -> AsyncIOScheduler:
@@ -49,6 +53,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await application.identity.sync_demo_admin.execute(resolved.demo_admin)
         scheduler.start()
         await application.cameras.supervisor.start_all()
+        try:
+            imported = await application.directory.import_legacy_media(
+                Path(resolved.media_root) / "directory"
+            )
+            if imported:
+                logger.info("Fotos del directorio pasadas a la base: %s", imported)
+        except Exception:
+            logger.exception("No se pudieron pasar a la base las fotos de disco")
         await application.directory.runner.start_if_stale()
         yield
         await application.directory.runner.stop()

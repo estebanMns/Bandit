@@ -101,6 +101,10 @@ class ScrapingTools:
         self.last_error = detail[:300]
         logger.warning("Falló la extracción de una página: %s", self.last_error)
 
+    def resolve_page_failure(self) -> None:
+        """Una página que falló y luego se reintentó con éxito deja de contar como fallo."""
+        self.failed_pages = max(0, self.failed_pages - 1)
+
     def finish(self) -> str:
         self.finished = True
         return "Extracción terminada."

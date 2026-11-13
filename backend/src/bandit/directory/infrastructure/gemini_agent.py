@@ -5,8 +5,10 @@ volantes y devuelve la lista de personas. Cada registro pasa después por la val
 de ScrapingTools: lo que no esté escrito en la fuente se rechaza.
 """
 
+import asyncio
 import logging
 import re
+from collections.abc import Awaitable, Callable
 from dataclasses import replace
 from typing import Any
 
@@ -26,6 +28,10 @@ _LINK = re.compile(r"\[(?:img|a): ([^\]\s]+)\]")
 _MEDIA_SUFFIXES = (".jpg", ".jpeg", ".png", ".webp", ".pdf")
 _MAX_FLYER_CHARS = 4_000
 _UNKNOWN_POSITION = 500
+# Después de la primera pasada, las páginas fallidas esperan y se reintentan. Con cuota
+# diaria agotada no basta: en ese caso la corrida queda incompleta y no retira a nadie.
+_RETRY_PASSES = 2
+_RETRY_WAIT_SECONDS = 90.0
 
 SYSTEM_INSTRUCTION = """\
 Lees UNA página del listado público "Los más buscados de Colombia" de la Policía Nacional,
@@ -100,11 +106,22 @@ def position_of(record: ExtractedRecord, page: int, photos: list[str], index: in
 
 
 class GeminiDirectoryAgent:
-    def __init__(self, api_key: str, model: str) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        client: Any = None,
+        sleep: Callable[[float], Awaitable[object]] = asyncio.sleep,
+        retry_passes: int = _RETRY_PASSES,
+        retry_wait_seconds: float = _RETRY_WAIT_SECONDS,
+    ) -> None:
         # La extracción no tiene prisa: mejor esperar que perder la página.
-        self._client = genai.Client(
+        self._client = client or genai.Client(
             api_key=api_key, http_options=http_options(attempts=6, max_delay=60)
         )
+        self._sleep = sleep
+        self._retry_passes = retry_passes
+        self._retry_wait_seconds = retry_wait_seconds
         self._model = model
         self._config = types.GenerateContentConfig(
             system_instruction=SYSTEM_INSTRUCTION,
@@ -114,6 +131,7 @@ class GeminiDirectoryAgent:
 
     async def run(self, tools: AgentTools) -> None:
         seen: set[str] = set()
+        pending: dict[int, tuple[str, list[str]]] = {}
         for page in range(MAX_LISTING_PAGES):
             try:
                 text = await tools.open_listing_page(page)
@@ -125,12 +143,36 @@ class GeminiDirectoryAgent:
             if not new_media:
                 break
             seen.update(new_media)
-            await self._extract_page(tools, page, text, links)
+            failure = await self._extract_page(tools, page, text, links)
+            if failure is not None:
+                # Cuota o un fallo transitorio: la página se reintenta más abajo, no se pierde.
+                tools.record_page_failure(f"página {page}: {failure}")
+                pending[page] = (text, links)
+        await self._retry_pending(tools, pending)
         tools.finish()
+
+    async def _retry_pending(
+        self, tools: AgentTools, pending: dict[int, tuple[str, list[str]]]
+    ) -> None:
+        """Reintenta las páginas fallidas tras una espera. Solo cuenta como resuelta si funciona."""
+        for _ in range(self._retry_passes):
+            if not pending:
+                return
+            await self._sleep(self._retry_wait_seconds)
+            still_failing: dict[int, tuple[str, list[str]]] = {}
+            for page, (text, links) in pending.items():
+                error = await self._extract_page(tools, page, text, links)
+                if error is None:
+                    tools.resolve_page_failure()
+                else:
+                    logger.warning("Sigue fallando la página %s: %s", page, error)
+                    still_failing[page] = (text, links)
+            pending = still_failing
 
     async def _extract_page(
         self, tools: AgentTools, page: int, text: str, links: list[str]
-    ) -> None:
+    ) -> str | None:
+        """Devuelve None si la página se extrajo; si no, el motivo del fallo."""
         flyers: dict[str, str] = {}
         for url in (link for link in links if link.lower().split("?")[0].endswith(".pdf")):
             try:
@@ -148,14 +190,14 @@ class GeminiDirectoryAgent:
                 else _PageRecords.model_validate_json(response.text or "").records
             )
         except Exception as error:
-            tools.record_page_failure(f"página {page}: {describe_error(error)}")
-            return
+            return describe_error(error)
         photos = [url for url in links if is_media(url) and not url.lower().endswith(".pdf")]
         for index, item in enumerate(records):
             record = record_from_arguments(item.model_dump())
             tools.submit_record(
                 replace(record, listing_position=position_of(record, page, photos, index))
             )
+        return None
 
 
 class DisabledDirectoryAgent:

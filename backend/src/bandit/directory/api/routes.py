@@ -1,5 +1,6 @@
 """Rutas del directorio. Solo informan: nada aquí se cruza con el video."""
 
+import hashlib
 from datetime import datetime
 from typing import Annotated
 
@@ -120,19 +121,21 @@ async def sync_status(module: DirectoryModule) -> SyncStatusResponse:
 
 
 @router.get("/media/{name}")
-async def get_media(name: str, module: Module) -> Response:
+async def get_media(name: str, request: Request, module: Module) -> Response:
     stored = await module.media.read(name)
     if stored is None:
         raise NotFoundError("El archivo no existe")
-    return Response(
-        content=stored.data,
-        media_type=stored.content_type,
-        headers={
-            "Cross-Origin-Resource-Policy": "same-origin",
-            "X-Content-Type-Options": "nosniff",
-            "Cache-Control": "public, max-age=3600",
-        },
-    )
+    # El ETag cambia cuando cambian los bytes: una foto republicada se ve al instante.
+    etag = f'"{hashlib.sha256(stored.data).hexdigest()[:32]}"'
+    headers = {
+        "Cross-Origin-Resource-Policy": "same-origin",
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+        "ETag": etag,
+    }
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers=headers)
+    return Response(content=stored.data, media_type=stored.content_type, headers=headers)
 
 
 @router.get("/{slug}")

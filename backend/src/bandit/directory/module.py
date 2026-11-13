@@ -1,7 +1,9 @@
 """Composición del módulo de directorio."""
 
 from datetime import timedelta
+from pathlib import Path
 
+from bandit.directory.application.media_import import import_disk_media
 from bandit.directory.application.sync_runner import DirectorySyncRunner
 from bandit.directory.application.use_cases import (
     GetWanted,
@@ -56,3 +58,13 @@ class DirectoryModule:
             manual_gap=MANUAL_SYNC_GAP,
             stale_after=sync_interval,
         )
+
+    async def import_legacy_media(self, directory: Path) -> int:
+        """Al arrancar: copia a la base las fotos de registros activos que solo están en disco."""
+        referenced = [
+            name
+            for record in await self.list_active.execute()
+            for name in (record.photo_file, record.flyer_file)
+            if name is not None
+        ]
+        return await import_disk_media(directory, self.media, referenced)
