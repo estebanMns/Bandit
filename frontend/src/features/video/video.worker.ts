@@ -75,7 +75,8 @@ async function connect(cameraId: string): Promise<void> {
     return;
   }
   if (stopped || attempt !== generation) return;
-  const connection = new WebSocket(url);
+  // El id ya se validó como UUID y va codificado: no puede cambiar el servidor ni la ruta.
+  const connection = new WebSocket(url); // NOSONAR
   connection.binaryType = "arraybuffer";
   socket = connection;
 
