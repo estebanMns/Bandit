@@ -5,6 +5,7 @@ import pytest
 from cryptography.fernet import Fernet
 
 from bandit.cameras.domain.models import CameraStatus, CameraStatusChanged, validate_stream_url
+from bandit.cameras.domain.ports import FrameSourceUnavailableError
 from bandit.cameras.infrastructure.fernet_cipher import FernetUrlCipher
 from bandit.cameras.infrastructure.gemini_path_advisor import DisabledPathAdvisor
 from bandit.cameras.infrastructure.imou_cloud import ImouCloudResolver
@@ -221,3 +222,33 @@ async def test_an_unreadable_camera_is_not_retried_every_minute(
 
     assert caplog.text.count("CAMERA_ENCRYPTION_KEY") == 1
     assert source.urls == []
+
+
+async def test_the_reason_for_missing_video_is_shown_until_video_arrives(
+    sessions, cipher, clock, establishment
+):
+    gate = asyncio.Event()
+
+    class Unreachable:
+        def __init__(self):
+            self.calls = 0
+
+        async def stream(self, url):
+            self.calls += 1
+            if self.calls == 1:
+                raise FrameSourceUnavailableError("la cámara 192.168.1.20 no entregó video")
+            await gate.wait()
+            yield b"imagen"
+            await asyncio.Event().wait()
+
+    module = build(sessions, Unreachable(), cipher, clock)
+    module.supervisor._initial_backoff = 0.001
+    camera = await module.register.execute(establishment.id, "Barra", URL)
+
+    await wait_until(lambda: module.supervisor.problem_of(camera.id) is not None)
+    assert module.supervisor.problem_of(camera.id) == "La cámara 192.168.1.20 no entregó video"
+
+    gate.set()
+    await wait_until(lambda: module.supervisor.status_of(camera.id) is CameraStatus.LIVE)
+    assert module.supervisor.problem_of(camera.id) is None
+    await module.supervisor.stop_all()
