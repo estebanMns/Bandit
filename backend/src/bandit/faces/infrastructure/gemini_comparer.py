@@ -25,13 +25,13 @@ class _Verdict(BaseModel):
 
 
 class GeminiFaceComparer:
-    def __init__(self, api_key: str, model: str) -> None:
+    def __init__(self, api_key: str, models: Sequence[str]) -> None:
         from google import genai
         from google.genai import types
 
-        from bandit.shared.gemini import http_options
+        from bandit.shared.gemini import ModelChain, http_options
 
-        self.model = model
+        self._chain = ModelChain(models)
         self._types = types
         self._client = genai.Client(api_key=api_key, http_options=http_options(2, 10))
         self._config = types.GenerateContentConfig(
@@ -40,13 +40,21 @@ class GeminiFaceComparer:
             response_schema=_Verdict,
         )
 
+    @property
+    def model(self) -> str:
+        """El modelo en uso: pasa al siguiente mientras uno no tenga cuota."""
+        return self._chain.active
+
     async def compare(self, references: Sequence[bytes], probe: bytes) -> FaceVerdict:
+        return await self._chain.run(lambda model: self._compare(model, references, probe))
+
+    async def _compare(self, model: str, references: Sequence[bytes], probe: bytes) -> FaceVerdict:
         types = self._types
         parts = [types.Part.from_bytes(data=image, mime_type="image/jpeg") for image in references]
         parts.append(types.Part.from_text(text="Imagen de la cámara:"))
         parts.append(types.Part.from_bytes(data=probe, mime_type="image/jpeg"))
         response = await self._client.aio.models.generate_content(
-            model=self.model,
+            model=model,
             contents=types.Content(role="user", parts=parts),
             config=self._config,
         )

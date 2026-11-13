@@ -67,6 +67,22 @@ Funciona igual en Mac con Apple Silicon o Intel: las imágenes de Docker son mul
    ni nube. Si no, usa el puente (`bash relay/iniciar-puente.sh`, que también corre en macOS) o la
    nube de Imou.
 
+### Producción: frontend en Vercel y backend en la nube
+
+Un backend en internet **no alcanza una cámara con IP privada** (`192.168.x.x`, `10.x.x.x`):
+esa dirección solo existe dentro del Wi-Fi del local. El video queda en "Conectando" y Bandit
+lo explica en la vista de la cámara ("Está en una red privada…"). Hay dos salidas:
+
+1. **Cámaras Imou por su nube** (recomendado): pon `IMOU_APP_ID` e `IMOU_APP_SECRET` en el
+   backend de producción y usa **Conectar mi cámara automáticamente**. La red local falla (es
+   normal desde la nube) y Bandit registra la cámara como `imou://…`, que sí se alcanza.
+2. **Backend en el local**: corre el backend con Docker en un equipo del local y deja solo el
+   frontend en Vercel, conectado por un túnel seguro (Cloudflare Tunnel o Tailscale).
+
+Nunca abras el puerto 554 del router hacia internet. El backend de producción debe usar la misma
+`CAMERA_ENCRYPTION_KEY` con la que se guardaron las cámaras, y conviene definir
+`GEMINI_FALLBACK_MODELS` para que la IA siga funcionando si un modelo se queda sin cuota.
+
 ### Correr sin Docker en Windows (para depurar)
 
 Lo normal es Docker: es más rápido y trae todo listo. Sin Docker, desde la carpeta raíz (donde

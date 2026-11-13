@@ -20,6 +20,8 @@ interface CameraViewProps {
   bare?: boolean;
   /** Avisa el estado y los fotogramas por segundo, para la telemetría. */
   onMetrics?: (metrics: { live: boolean; fps: number }) => void;
+  /** Por qué el backend no tiene video de esta cámara, para explicarlo en vez de esperar. */
+  problem?: string | null;
 }
 
 export function CameraView({
@@ -29,6 +31,7 @@ export function CameraView({
   onSelect,
   bare = false,
   onMetrics,
+  problem,
 }: CameraViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { state, fps } = useVideoStream(cameraId, canvasRef);
@@ -45,7 +48,11 @@ export function CameraView({
         role="img"
         aria-label={`Video de ${name}`}
       />
-      {state !== "en-vivo" && <p className={styles.aviso}>{STATE_LABEL[state]}</p>}
+      {state !== "en-vivo" && (
+        <p className={styles.aviso} role={problem ? "alert" : undefined}>
+          {problem ?? STATE_LABEL[state]}
+        </p>
+      )}
       {!bare && (
         <div className={styles.pie}>
           <span className={styles.nombre}>{name}</span>

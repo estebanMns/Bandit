@@ -31,7 +31,10 @@ button.vista {
   display: grid;
   place-items: center;
   max-width: none;
+  padding: 16px;
   color: var(--hielo-tenue);
+  text-align: center;
+  text-wrap: balance;
 }
 
 .pie {
