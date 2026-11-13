@@ -138,6 +138,10 @@ internet con unos segundos de retraso y consume la cuota de tu aplicación en Im
 
 ### Cámara que solo responde a otro equipo
 
+Las cámaras Imou y Dahua bloquean la IP de un equipo tras varios inicios de sesión fallidos.
+Bandit prueba la clave una sola vez por intento para no provocarlo; si aun así la cámara dejó de
+responder, desconéctala dos minutos de la corriente o cambia la IP del equipo.
+
 Algunas cámaras Imou o Dahua dejan de contestarle a un equipo concreto. Si la cámara responde
 desde otro equipo de la misma red, como una máquina virtual en modo puente, usa ese equipo como
 puente:
@@ -150,6 +154,13 @@ El script descarga MediaMTX, pide la IP y el código de la cámara sin mostrarlo
 de solo lectura. Al terminar imprime dos URL, `rtsp://bandit:<clave>@<ip-del-puente>:8554/lente1` y
 `/lente2`. Regístralas en **Cámaras** como dos cámaras. El puente debe quedar encendido; si se
 apaga, Bandit marca la cámara como caída y reintenta.
+
+### Si cambias CAMERA_ENCRYPTION_KEY
+
+Las URL de las cámaras se guardan cifradas con `CAMERA_ENCRYPTION_KEY`. Con otra clave, las
+cámaras ya guardadas no se pueden leer: Bandit las deja detenidas y lo dice en el registro ("se
+guardó con otra CAMERA_ENCRYPTION_KEY"). Vuelve a poner la clave anterior o borra esas cámaras en
+**Cámaras** y conéctalas de nuevo. Todos los equipos que usan la misma base deben tener la misma.
 
 ### Primeros pasos y búsqueda de cámaras
 

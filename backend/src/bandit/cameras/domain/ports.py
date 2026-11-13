@@ -31,6 +31,10 @@ class FrameSource(Protocol):
     def stream(self, url: str) -> AsyncIterator[bytes]: ...
 
 
+class UnreadableUrlError(Exception):
+    """La URL se cifró con otra CAMERA_ENCRYPTION_KEY: con la clave actual no se puede leer."""
+
+
 class UrlCipher(Protocol):
     def encrypt(self, url: str) -> str: ...
 
