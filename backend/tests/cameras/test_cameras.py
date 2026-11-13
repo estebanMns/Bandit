@@ -163,3 +163,24 @@ async def test_unknown_camera_id_is_not_found(sessions, cipher, clock):
 
     with pytest.raises(NotFoundError):
         await module.get.execute(uuid4())
+
+
+async def test_a_camera_saved_with_another_key_stops_with_a_clear_message(
+    sessions, cipher, clock, establishment, caplog
+):
+    await build(sessions, ScriptedSource(), cipher, clock).register.execute(
+        establishment.id, "Barra", URL
+    )
+    await asyncio.sleep(0)
+    other_key = FernetUrlCipher(Fernet.generate_key().decode())
+    source = ScriptedSource()
+    module = build(sessions, source, other_key, clock)
+
+    await module.supervisor.start_all()
+    await asyncio.sleep(0.01)
+
+    camera = (await module.list_for.execute(establishment.id))[0]
+    assert module.supervisor.status_of(camera.id) is CameraStatus.STOPPED
+    assert source.urls == []
+    assert "CAMERA_ENCRYPTION_KEY" in caplog.text
+    assert "secreto" not in caplog.text
