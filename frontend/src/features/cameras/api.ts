@@ -8,6 +8,8 @@ export interface Camera {
   name: string;
   enabled: boolean;
   status: CameraStatus;
+  /** Por qué no hay video, si el backend lo sabe (nunca trae la URL ni la clave). */
+  problem?: string | null;
 }
 
 export function listCameras(establishmentId: string): Promise<Camera[]> {
