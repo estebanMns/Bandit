@@ -34,7 +34,7 @@ class NetworkScanner(Protocol):
 
 class RtspProber(Protocol):
     async def describe(self, ip: str, port: int, path: str, username: str, password: str) -> int:
-        """Código RTSP de DESCRIBE (200, 401, 404...) o 0 si no hubo respuesta."""
+        """Código RTSP de DESCRIBE (200, 404...), 401 si rechazó la clave o 0 sin respuesta."""
         ...
 
 
@@ -145,17 +145,20 @@ class ConnectDevice:
         source: str,
     ) -> ConnectResult:
         result = ConnectResult(ConnectOutcome.NOT_FOUND, port=device.rtsp_port)
-        unauthorized = False
         for template in templates:
             result.tried += 1
             status = await self._prober.describe(
                 device.ip, device.rtsp_port, template.path, username, password
             )
+            if status == UNAUTHORIZED:
+                # Cada clave rechazada cuenta como inicio de sesión fallido: tras unos pocos,
+                # la cámara bloquea a este equipo. Se para al primero.
+                if not result.streams:
+                    result.outcome = ConnectOutcome.WRONG_PASSWORD
+                    return result
+                break
             if status == OK:
                 result.streams.append(WorkingStream(template.path, template.label, source))
-            unauthorized = unauthorized or status == UNAUTHORIZED
         if result.streams:
             result.outcome = ConnectOutcome.CONNECTED
-        elif unauthorized:
-            result.outcome = ConnectOutcome.WRONG_PASSWORD
         return result
