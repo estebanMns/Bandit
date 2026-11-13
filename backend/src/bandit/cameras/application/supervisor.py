@@ -42,11 +42,17 @@ class CaptureSupervisor:
         self._tasks: dict[UUID, asyncio.Task[None]] = {}
         self._running: dict[UUID, Camera] = {}
         self._statuses: dict[UUID, CameraStatus] = {}
+        # Por qué una cámara no tiene video, para mostrarlo en la app. Nunca incluye la URL.
+        self._problems: dict[UUID, str] = {}
         # URL cifrada de cada cámara que no se pudo leer: no se reintenta mientras no cambie.
         self._unreadable: dict[UUID, str] = {}
 
     def status_of(self, camera_id: UUID) -> CameraStatus:
         return self._statuses.get(camera_id, CameraStatus.STOPPED)
+
+    def problem_of(self, camera_id: UUID) -> str | None:
+        problem = self._problems.get(camera_id)
+        return problem[:1].upper() + problem[1:] if problem else None
 
     async def start_all(self) -> None:
         for camera in await self._cameras.list_enabled():
@@ -91,6 +97,9 @@ class CaptureSupervisor:
             url = self._cipher.decrypt(camera.encrypted_url)
         except UnreadableUrlError:
             # Reintentar no sirve: con esta clave la URL nunca se podrá leer.
+            self._problems[camera.id] = (
+                "Se guardó con otra CAMERA_ENCRYPTION_KEY: bórrala y conéctala de nuevo"
+            )
             logger.warning(
                 "No se puede leer la cámara %s: se guardó con otra CAMERA_ENCRYPTION_KEY. "
                 "Vuelve a poner la clave anterior o bórrala y conéctala de nuevo.",
@@ -108,13 +117,16 @@ class CaptureSupervisor:
             try:
                 async for jpeg in self._source.stream(url):
                     if self.status_of(camera.id) is not CameraStatus.LIVE:
+                        self._problems.pop(camera.id, None)
                         await self._set_status(camera, CameraStatus.LIVE)
                         backoff = self._initial_backoff
                     self._hub.publish(Frame(camera.id, jpeg, self._clock.now()))
             except asyncio.CancelledError:
                 raise
             except FrameSourceUnavailableError as error:
-                logger.warning("No se puede leer la cámara %s: %s", camera.id, error)
+                if self._problems.get(camera.id) != str(error):
+                    logger.warning("No se puede leer la cámara %s: %s", camera.id, error)
+                self._problems[camera.id] = str(error)
             except Exception as error:
                 # Solo el tipo: el mensaje podría incluir la URL con credenciales.
                 logger.warning("Se perdió la cámara %s: %s", camera.id, type(error).__name__)
