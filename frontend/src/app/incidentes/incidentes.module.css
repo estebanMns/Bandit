@@ -24,7 +24,7 @@
 
 .fila {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 1.5fr auto;
+  grid-template-columns: 2fr 1.5fr 1.5fr auto auto;
   gap: var(--e-1) var(--e-4);
   align-items: baseline;
   padding: var(--e-3) 0;
@@ -113,4 +113,15 @@
   color: var(--texto-tenue);
   font-size: var(--t-sm);
   text-align: center;
+}
+
+/* Llamado a decidir en las filas pendientes: la decisión se toma en el detalle, con la evidencia. */
+.revisar {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--accion);
+  color: var(--sobre-accion);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  white-space: nowrap;
 }
