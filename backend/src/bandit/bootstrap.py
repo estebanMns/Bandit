@@ -68,6 +68,7 @@ from bandit.shared.clock import Clock, SystemClock
 from bandit.shared.config import Settings
 from bandit.shared.db import create_engine, create_session_factory
 from bandit.shared.events import EventBus, InMemoryEventBus
+from bandit.shared.gemini import model_list
 
 
 @dataclass(slots=True)
@@ -103,7 +104,9 @@ def _scene_analyzer(settings: Settings) -> SceneAnalyzer:
         settings.gemini_api_key,
         settings.gemini_model,
         settings.gemini_media_resolution,
-        fallback_model=settings.gemini_directory_model,
+        fallback_models=model_list(
+            settings.gemini_directory_model, settings.gemini_fallback_models
+        ),
     )
 
 
@@ -139,7 +142,12 @@ def _faces_module(
     return FacesModule(
         cameras.frames,
         cameras.get,
-        GeminiFaceComparer(settings.gemini_api_key, settings.face_watch_model) if enabled else None,
+        GeminiFaceComparer(
+            settings.gemini_api_key,
+            model_list(settings.face_watch_model, settings.gemini_fallback_models),
+        )
+        if enabled
+        else None,
         ReferenceFolderWatchList(str(Path(settings.media_root) / "faces"), consented_people),
         PillowMotionDetector(),
         FacePolicy(
