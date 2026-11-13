@@ -50,15 +50,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         scheduler.start()
         await application.cameras.supervisor.start_all()
         await application.directory.runner.start_if_stale()
-        yield
-        await application.directory.runner.stop()
-        await application.cameras.supervisor.stop_all()
-        await application.analysis.supervisor.stop_all()
-        if application.faces.supervisor is not None:
-            await application.faces.supervisor.stop_all()
-        await application.background.wait_all()
-        scheduler.shutdown(wait=False)
-        await application.engine.dispose()
+        try:
+            yield
+        finally:
+            # Se apaga todo aunque el servidor termine por un error.
+            await application.directory.runner.stop()
+            await application.cameras.supervisor.stop_all()
+            await application.analysis.supervisor.stop_all()
+            if application.faces.supervisor is not None:
+                await application.faces.supervisor.stop_all()
+            await application.background.wait_all()
+            scheduler.shutdown(wait=False)
+            await application.engine.dispose()
 
     app = FastAPI(title="Bandit", lifespan=lifespan)
     app.state.identity = application.identity
