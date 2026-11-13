@@ -142,7 +142,7 @@ async def test_found_cameras_without_password_ask_for_it(clock):
         uuid4(), "192.168.1.0/24", "admin", ""
     )
 
-    assert result.attempts[0].status is AttemptStatus.NEEDS_PASSWORD
+    assert result.attempts[0].status is AttemptStatus.NEEDS_CREDENTIALS
 
 
 def test_reads_the_imou_device_list_tolerantly():
