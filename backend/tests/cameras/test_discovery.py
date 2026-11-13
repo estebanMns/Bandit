@@ -144,3 +144,16 @@ async def test_unreachable_device_is_reported():
     result = await connect.execute("192.168.1.102", "admin", "buena")
 
     assert result.outcome is ConnectOutcome.UNREACHABLE
+
+
+async def test_a_rejected_password_is_tried_only_once_so_the_camera_does_not_block_us():
+    prober = FakeProber()
+    advisor = FakeAdvisor(["/otra"])
+
+    result = await ConnectDevice(FakeScanner(IMOU), prober, advisor).execute(
+        "192.168.1.102", "admin", "mala"
+    )
+
+    assert result.outcome is ConnectOutcome.WRONG_PASSWORD
+    assert len(prober.paths) == 1
+    assert advisor.devices == []
