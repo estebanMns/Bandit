@@ -49,6 +49,8 @@ class CameraResponse(BaseModel):
     name: str
     enabled: bool
     status: CameraStatus
+    # Por qué no hay video, si se sabe (nunca incluye la URL ni la clave).
+    problem: str | None = None
 
 
 class ScanRequest(BaseModel):
@@ -104,6 +106,7 @@ def _response(camera: Camera, module: CamerasModule) -> CameraResponse:
         name=camera.name,
         enabled=camera.enabled,
         status=module.supervisor.status_of(camera.id),
+        problem=module.supervisor.problem_of(camera.id),
     )
 
 
