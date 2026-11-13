@@ -1,13 +1,31 @@
 """Fuente de fotogramas RTSP o HLS con ffmpeg como subproceso asíncrono."""
 
 import asyncio
+import ipaddress
 from collections.abc import AsyncIterator
+from urllib.parse import urlsplit
 
 from bandit.cameras.domain.ports import FrameSourceUnavailableError
 from bandit.cameras.infrastructure.jpeg_parser import JpegStreamParser
 
 _CHUNK_BYTES = 64 * 1024
 _READ_TIMEOUT_SECONDS = 15
+
+
+def no_video_reason(url: str) -> str:
+    """Por qué una cámara no entregó video, sin mostrar usuario ni clave de la URL."""
+    host = urlsplit(url).hostname or "la cámara"
+    try:
+        private = ipaddress.ip_address(host).is_private
+    except ValueError:
+        private = False
+    if private:
+        return (
+            f"la cámara {host} no entregó video. Está en una red privada: un servidor en "
+            "internet no puede alcanzarla. Conéctala por la nube de Imou o corre el backend "
+            "en el local, en la misma red que la cámara"
+        )
+    return f"la cámara {host} no entregó video: revisa la dirección, el usuario y la clave"
 
 
 class FfmpegFrameSource:
@@ -59,14 +77,24 @@ class FfmpegFrameSource:
             ) from error
         assert process.stdout is not None
         parser = JpegStreamParser()
+        frames = 0
         try:
             while True:
-                chunk = await asyncio.wait_for(
-                    process.stdout.read(_CHUNK_BYTES), _READ_TIMEOUT_SECONDS
-                )
+                try:
+                    chunk = await asyncio.wait_for(
+                        process.stdout.read(_CHUNK_BYTES), _READ_TIMEOUT_SECONDS
+                    )
+                except TimeoutError:
+                    if frames == 0:
+                        raise FrameSourceUnavailableError(no_video_reason(url)) from None
+                    raise
                 if not chunk:
+                    if frames == 0:
+                        # ffmpeg terminó sin una sola imagen: la cámara no respondió.
+                        raise FrameSourceUnavailableError(no_video_reason(url))
                     return
                 for jpeg in parser.feed(chunk):
+                    frames += 1
                     yield jpeg
         finally:
             if process.returncode is None:
