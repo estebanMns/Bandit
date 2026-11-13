@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import JSON, BigInteger, String
+from sqlalchemy import JSON, BigInteger, LargeBinary, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from bandit.shared.db import Base, UtcDateTime
@@ -29,6 +29,17 @@ class WantedRow(Base):
     active: Mapped[bool] = mapped_column(index=True)
     reward_amount: Mapped[int | None] = mapped_column(BigInteger)
     listing_position: Mapped[int | None]
+
+
+class MediaRow(Base):
+    """Foto o volante publicado. Vive en la base para que cualquier despliegue la sirva."""
+
+    __tablename__ = "directory_media"
+
+    name: Mapped[str] = mapped_column(String(320), primary_key=True)
+    content_type: Mapped[str] = mapped_column(String(100))
+    data: Mapped[bytes] = mapped_column(LargeBinary)
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime)
 
 
 class SyncRunRow(Base):

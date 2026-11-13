@@ -1,5 +1,6 @@
 """Puertos del módulo de directorio."""
 
+from dataclasses import dataclass
 from typing import Protocol
 
 from bandit.directory.domain.models import ExtractedRecord, SyncRun, WantedRecord
@@ -27,12 +28,18 @@ class PageFetcher(Protocol):
     async def fetch_bytes(self, url: str, max_bytes: int) -> bytes: ...
 
 
+@dataclass(frozen=True)
+class StoredMedia:
+    content_type: str
+    data: bytes
+
+
 class MediaStore(Protocol):
     async def save(self, name: str, data: bytes) -> None: ...
 
     async def delete(self, name: str) -> None: ...
 
-    def path_of(self, name: str) -> str | None: ...
+    async def read(self, name: str) -> StoredMedia | None: ...
 
 
 class SiteRevalidator(Protocol):

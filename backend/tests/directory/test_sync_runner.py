@@ -5,7 +5,7 @@ import asyncio
 import pytest
 
 from bandit.directory.domain.models import SyncTrigger
-from bandit.directory.infrastructure.file_media import FileMediaStore
+from bandit.directory.infrastructure.db_media import DbMediaStore
 from bandit.shared.errors import ConflictError, RateLimitedError
 from tests.directory.test_sync import FakeRevalidator, build
 
@@ -26,8 +26,8 @@ class BrokenAgent:
 
 
 @pytest.fixture
-def media(tmp_path):
-    return FileMediaStore(str(tmp_path))
+def media(sessions):
+    return DbMediaStore(sessions)
 
 
 @pytest.fixture

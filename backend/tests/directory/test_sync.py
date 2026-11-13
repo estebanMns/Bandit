@@ -4,7 +4,8 @@ import pytest
 
 from bandit.directory.application.tools import SOURCE_URL
 from bandit.directory.domain.models import ExtractedRecord
-from bandit.directory.infrastructure.file_media import FileMediaStore
+from bandit.directory.domain.ports import StoredMedia
+from bandit.directory.infrastructure.db_media import DbMediaStore
 from bandit.directory.module import DirectoryModule
 from bandit.shared.errors import NotFoundError
 
@@ -56,8 +57,8 @@ def revalidator():
 
 
 @pytest.fixture
-def media(tmp_path):
-    return FileMediaStore(str(tmp_path))
+def media(sessions):
+    return DbMediaStore(sessions)
 
 
 def build(sessions, clock, media, revalidator, names, published=None, finish=True):
@@ -80,7 +81,7 @@ async def test_publishes_records_and_their_photo(sessions, clock, media, revalid
     record = await module.get.execute("ana-ejemplo")
     assert report.published == 1
     assert record.source_url == SOURCE_URL
-    assert media.path_of(record.photo_file) is not None
+    assert await media.read(record.photo_file) is not None
     assert revalidator.calls == 1
 
 
@@ -95,7 +96,7 @@ async def test_records_no_longer_listed_are_retired_with_their_files(
     assert report.retired == 1
     with pytest.raises(NotFoundError):
         await module.get.execute("beto-ejemplo")
-    assert media.path_of("beto-ejemplo.jpg") is None
+    assert await media.read("beto-ejemplo.jpg") is None
 
 
 async def test_incomplete_run_retires_nobody(sessions, clock, media, revalidator):
@@ -131,9 +132,9 @@ async def test_a_republished_person_becomes_visible_again(sessions, clock, media
     assert (await module.get.execute("ana-ejemplo")).active
 
 
-def test_media_store_rejects_path_traversal(media):
-    assert media.path_of("../secreto.txt") is None
-    assert media.path_of("..\\secreto.txt") is None
+async def test_media_store_rejects_path_traversal(media):
+    assert await media.read("../secreto.txt") is None
+    assert await media.read("..\\secreto.txt") is None
 
 
 class PartialTools:
@@ -201,4 +202,11 @@ async def test_removing_a_local_test_hides_it_and_its_photo(sessions, clock, med
 
     with pytest.raises(NotFoundError):
         await module.get.execute("persona-prueba")
-    assert media.path_of("persona-prueba.jpg") is None
+    assert await media.read("persona-prueba.jpg") is None
+
+
+async def test_media_is_stored_with_its_content_type(media):
+    await media.save("ana-ejemplo.png", b"png-bytes")
+    assert await media.read("ana-ejemplo.png") == StoredMedia("image/png", b"png-bytes")
+    await media.delete("ana-ejemplo.png")
+    assert await media.read("ana-ejemplo.png") is None

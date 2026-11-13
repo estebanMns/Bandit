@@ -29,7 +29,7 @@ from bandit.cameras.infrastructure.resolving_source import ResolvingFrameSource
 from bandit.cameras.module import CamerasModule
 from bandit.directory.domain.ports import DirectoryAgent
 from bandit.directory.infrastructure import tables as directory_tables  # noqa: F401
-from bandit.directory.infrastructure.file_media import FileMediaStore
+from bandit.directory.infrastructure.db_media import DbMediaStore
 from bandit.directory.infrastructure.gemini_agent import (
     DisabledDirectoryAgent,
     GeminiDirectoryAgent,
@@ -270,7 +270,7 @@ def build_application(settings: Settings) -> Application:
         sessions,
         _directory_agent(settings),
         PoliteFetcher(),
-        FileMediaStore(str(Path(settings.media_root) / "directory")),
+        DbMediaStore(sessions),
         NextRevalidator(settings.frontend_internal_url, settings.revalidate_secret),
         clock,
         timedelta(hours=settings.directory_scrape_interval_hours),
