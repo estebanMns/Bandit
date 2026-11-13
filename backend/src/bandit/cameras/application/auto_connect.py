@@ -201,7 +201,12 @@ class AutoConnect:
             )
         elif AttemptStatus.WRONG_PASSWORD in statuses:
             result.attempts.append(
-                Attempt(Method.LAN, AttemptStatus.WRONG_PASSWORD, "La cámara rechazó la clave.")
+                Attempt(
+                    Method.LAN,
+                    AttemptStatus.WRONG_PASSWORD,
+                    "La cámara rechazó la clave. No se reintentó para que la cámara no bloquee "
+                    "a este equipo: revisa la clave o el código de la etiqueta.",
+                )
             )
         else:
             result.attempts.append(
