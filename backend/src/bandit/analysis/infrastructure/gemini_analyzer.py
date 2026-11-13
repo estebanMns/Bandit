@@ -1,18 +1,14 @@
 """Analizador de escenas con Gemini y salida estructurada."""
 
-import logging
-import time
+from collections.abc import Sequence
 from typing import Literal
 
 from google import genai
-from google.genai import errors as genai_errors
 from google.genai import types
 from pydantic import BaseModel, Field
 
 from bandit.analysis.domain.models import SceneAssessment, Severity, SituationType
-from bandit.shared.gemini import http_options
-
-logger = logging.getLogger(__name__)
+from bandit.shared.gemini import ModelChain, http_options, model_list
 
 SYSTEM_INSTRUCTION = """\
 Analizas un fotograma de una cámara de seguridad dentro de un local comercial en Colombia.
@@ -56,21 +52,19 @@ def parse_assessment(raw: str) -> SceneAssessment:
     )
 
 
-_QUOTA_EXHAUSTED = 429
-_FALLBACK_SECONDS = 600
-
-
 class GeminiSceneAnalyzer:
     def __init__(
-        self, api_key: str, model: str, media_resolution: str, fallback_model: str = ""
+        self,
+        api_key: str,
+        model: str,
+        media_resolution: str,
+        fallback_models: Sequence[str] = (),
     ) -> None:
         # En vivo conviene fallar pronto: el siguiente fotograma llega en segundos.
         self._client = genai.Client(
             api_key=api_key, http_options=http_options(attempts=3, max_delay=8)
         )
-        self._model = model
-        self._fallback = fallback_model if fallback_model != model else ""
-        self._fallback_until = 0.0
+        self._chain = ModelChain(model_list(model, *fallback_models))
         self._config = types.GenerateContentConfig(
             system_instruction=SYSTEM_INSTRUCTION,
             response_mime_type="application/json",
@@ -80,22 +74,11 @@ class GeminiSceneAnalyzer:
 
     @property
     def active_model(self) -> str:
-        """El modelo en uso: el de respaldo mientras el principal no tenga cuota."""
-        if self._fallback and time.monotonic() < self._fallback_until:
-            return self._fallback
-        return self._model
+        """El modelo en uso: pasa al siguiente mientras uno no tenga cuota."""
+        return self._chain.active
 
     async def assess(self, jpeg: bytes) -> SceneAssessment:
-        model = self.active_model
-        try:
-            return await self._ask(model, jpeg)
-        except genai_errors.APIError as error:
-            if error.code != _QUOTA_EXHAUSTED or not self._fallback or model == self._fallback:
-                raise
-            # Sin cuota en el principal: se usa el respaldo un rato y se vuelve a intentar.
-            logger.warning("%s sin cuota; se usa %s por ahora", model, self._fallback)
-            self._fallback_until = time.monotonic() + _FALLBACK_SECONDS
-            return await self._ask(self._fallback, jpeg)
+        return await self._chain.run(lambda model: self._ask(model, jpeg))
 
     async def _ask(self, model: str, jpeg: bytes) -> SceneAssessment:
         response = await self._client.aio.models.generate_content(
