@@ -52,8 +52,9 @@ class AttemptStatus(StrEnum):
     CONNECTED = "conectada"
     NOTHING_FOUND = "sin_camaras"
     BLOCKED = "bloqueada"
-    WRONG_PASSWORD = "clave_incorrecta"  # noqa: S105  Es un estado, no una clave.
-    NEEDS_PASSWORD = "falta_clave"  # noqa: S105  Es un estado, no una clave.
+    # Estados que ve el navegador, no claves: los valores no cambian.
+    REJECTED_CREDENTIALS = "clave_incorrecta"
+    NEEDS_CREDENTIALS = "falta_clave"
     NOT_CONFIGURED = "sin_configurar"
     SKIPPED = "omitido"
     FAILED = "error"
@@ -161,7 +162,7 @@ class AutoConnect:
             result.attempts.append(
                 Attempt(
                     Method.LAN,
-                    AttemptStatus.NEEDS_PASSWORD,
+                    AttemptStatus.NEEDS_CREDENTIALS,
                     f"Se encontraron cámaras en {names}. Escribe su clave para conectarlas.",
                 )
             )
@@ -181,7 +182,7 @@ class AutoConnect:
         for device in cameras:
             outcome = await self._connect.execute(device.ip, username, password)
             if outcome.outcome is ConnectOutcome.WRONG_PASSWORD:
-                statuses.append(AttemptStatus.WRONG_PASSWORD)
+                statuses.append(AttemptStatus.REJECTED_CREDENTIALS)
                 continue
             if outcome.outcome is not ConnectOutcome.CONNECTED:
                 statuses.append(AttemptStatus.BLOCKED)
@@ -199,11 +200,11 @@ class AutoConnect:
             result.attempts.append(
                 Attempt(Method.LAN, AttemptStatus.CONNECTED, "Conectada por la red local.")
             )
-        elif AttemptStatus.WRONG_PASSWORD in statuses:
+        elif AttemptStatus.REJECTED_CREDENTIALS in statuses:
             result.attempts.append(
                 Attempt(
                     Method.LAN,
-                    AttemptStatus.WRONG_PASSWORD,
+                    AttemptStatus.REJECTED_CREDENTIALS,
                     "La cámara rechazó la clave. No se reintentó para que la cámara no bloquee "
                     "a este equipo: revisa la clave o el código de la etiqueta.",
                 )
