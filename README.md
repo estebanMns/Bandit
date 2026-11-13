@@ -263,6 +263,12 @@ npm ci
 npm run lint && npm run typecheck && npm test && npm run build
 ```
 
+Docker y el CI instalan el backend desde `backend/requirements.txt` y `requirements-dev.txt`:
+versiones exactas con su huella (`--require-hashes`) y solo paquetes ya compilados, salvo
+`pywebpush` y `http-ece`, que solo existen como código fuente. Si cambias las dependencias de
+`pyproject.toml`, regenera los dos archivos con el comando que aparece en su encabezado
+(`uv pip compile …`). npm se instala con `--ignore-scripts`.
+
 Las pruebas de navegador corren contra el stack levantado:
 
 ```bash
