@@ -10,6 +10,7 @@ from bandit.cameras.domain.ports import (
     CameraRepository,
     FrameSource,
     FrameSourceUnavailableError,
+    UnreadableUrlError,
     UrlCipher,
 )
 from bandit.shared.clock import Clock
@@ -68,7 +69,18 @@ class CaptureSupervisor:
         await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _run(self, camera: Camera) -> None:
-        url = self._cipher.decrypt(camera.encrypted_url)
+        try:
+            url = self._cipher.decrypt(camera.encrypted_url)
+        except UnreadableUrlError:
+            # Reintentar no sirve: con esta clave la URL nunca se podrá leer.
+            logger.warning(
+                "No se puede leer la cámara %s: se guardó con otra CAMERA_ENCRYPTION_KEY. "
+                "Vuelve a poner la clave anterior o bórrala y conéctala de nuevo.",
+                camera.id,
+            )
+            self._tasks.pop(camera.id, None)
+            await self._set_status(camera, CameraStatus.STOPPED)
+            return
         backoff = self._initial_backoff
         while True:
             await self._set_status(camera, CameraStatus.CONNECTING)
