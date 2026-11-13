@@ -12,6 +12,8 @@ import { useIncidents } from "@/features/incidents/useIncidents";
 import { CameraView } from "@/features/video/CameraView";
 import styles from "./monitor.module.css";
 
+const CAMERA_REFRESH_MS = 20_000;
+
 export function MonitorClient() {
   const { current, loading } = useEstablishment();
   const [cameras, setCameras] = useState<Camera[]>([]);
@@ -22,15 +24,19 @@ export function MonitorClient() {
   useEffect(() => {
     if (!current) return;
     let active = true;
-    listCameras(current.id)
-      .then((loaded) => {
-        if (active) setCameras(loaded.filter((camera) => camera.enabled));
-      })
-      .catch(() => {
-        if (active) setCameras([]);
-      });
+    const load = () =>
+      listCameras(current.id)
+        .then((loaded) => {
+          if (active) setCameras(loaded.filter((camera) => camera.enabled));
+        })
+        // Si falla, se conserva la última lista conocida; el próximo intento la actualiza.
+        .catch(() => undefined);
+    void load();
+    // El estado y el motivo de cada cámara cambian en el servidor: se revisan cada 20 s.
+    const timer = setInterval(() => void load(), CAMERA_REFRESH_MS);
     return () => {
       active = false;
+      clearInterval(timer);
     };
   }, [current]);
 
@@ -56,7 +62,13 @@ export function MonitorClient() {
         )}
         {featured && (
           <section className={`vidrio ${styles.principal}`} aria-label="Cámara seleccionada">
-            <CameraView key={featured.id} cameraId={featured.id} name={featured.name} featured />
+            <CameraView
+              key={featured.id}
+              cameraId={featured.id}
+              name={featured.name}
+              problem={featured.problem}
+              featured
+            />
           </section>
         )}
         {others.length > 0 && (
@@ -66,6 +78,7 @@ export function MonitorClient() {
                 key={camera.id}
                 cameraId={camera.id}
                 name={camera.name}
+                problem={camera.problem}
                 onSelect={() => setSelectedCameraId(camera.id)}
               />
             ))}
