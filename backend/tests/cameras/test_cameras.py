@@ -184,3 +184,40 @@ async def test_a_camera_saved_with_another_key_stops_with_a_clear_message(
     assert source.urls == []
     assert "CAMERA_ENCRYPTION_KEY" in caplog.text
     assert "secreto" not in caplog.text
+
+
+async def test_cameras_added_or_disabled_from_another_computer_are_followed(
+    sessions, cipher, clock, establishment
+):
+    # Dos backends sobre la misma base, como el PC y la Mac.
+    here = build(sessions, ScriptedSource(), cipher, clock)
+    other = build(sessions, ScriptedSource(), cipher, clock)
+    camera = await other.register.execute(establishment.id, "Barra", URL)
+    await other.supervisor.stop_all()
+
+    await here.supervisor.reconcile()
+    await wait_until(lambda: here.supervisor.status_of(camera.id) is not CameraStatus.STOPPED)
+
+    await other.set_enabled.execute(camera.id, False)
+    await here.supervisor.reconcile()
+
+    assert here.supervisor.status_of(camera.id) is CameraStatus.STOPPED
+    await here.supervisor.stop_all()
+    await other.supervisor.stop_all()
+
+
+async def test_an_unreadable_camera_is_not_retried_every_minute(
+    sessions, cipher, clock, establishment, caplog
+):
+    await build(sessions, ScriptedSource(), cipher, clock).register.execute(
+        establishment.id, "Barra", URL
+    )
+    source = ScriptedSource()
+    module = build(sessions, source, FernetUrlCipher(Fernet.generate_key().decode()), clock)
+
+    for _ in range(3):
+        await module.supervisor.reconcile()
+        await asyncio.sleep(0.01)
+
+    assert caplog.text.count("CAMERA_ENCRYPTION_KEY") == 1
+    assert source.urls == []
