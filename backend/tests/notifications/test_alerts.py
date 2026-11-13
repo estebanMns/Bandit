@@ -109,6 +109,19 @@ async def test_sends_the_alert_with_local_time_and_no_identity(sessions, bus, re
     assert isinstance(results[0], AlertDelivered)
 
 
+async def test_a_confirmed_wanted_person_is_named_as_such_for_the_cai(
+    sessions, bus, results, local
+):
+    sender = FakeSender()
+    wanted = replace(incident(local.id), type="wanted_match")
+
+    await deliver(sessions, sender, bus).execute(
+        IncidentConfirmed(incident=wanted, confirmed_by="ana@example.com")
+    )
+
+    assert sender.sent[0][1].situation == "Persona buscada identificada"
+
+
 async def test_retries_before_reporting_success(sessions, bus, results, local):
     sender = FakeSender(failures=2)
 

@@ -11,6 +11,7 @@ SITUATION_LABELS = {
     "fight": "Pelea",
     "fire": "Fuego o humo",
     "medical": "Emergencia de salud",
+    "wanted_match": "Persona buscada identificada",
 }
 
 

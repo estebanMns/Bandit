@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { EvidenceImage } from "@/features/incidents/EvidenceImage";
-import { formatDateTime, situationLabel, STATUS_LABELS } from "@/features/incidents/labels";
+import { IncidentDecision } from "@/features/incidents/IncidentDecision";
+import { formatDateTime, situationLabel, statusLabel } from "@/features/incidents/labels";
 import type { Incident } from "@/features/incidents/types";
 import { serverApi } from "@/lib/server-api";
 import styles from "../incidentes.module.css";
@@ -29,11 +30,15 @@ export default async function IncidentPage({ params }: { params: Promise<{ id: s
             <p className={styles.tenue}>
               {incident.camera_name}, {formatDateTime(incident.detected_at)}
             </p>
+            <p className={styles.estado} data-estado={incident.status}>
+              {statusLabel(incident.type, incident.status)}
+            </p>
+            <IncidentDecision incident={incident} />
             <h2>Registro</h2>
             <ol className={styles.bitacora}>
               {incident.audit.map((entry) => (
                 <li key={`${entry.status}-${entry.at}`}>
-                  <strong>{STATUS_LABELS[entry.status]}</strong>
+                  <strong>{statusLabel(incident.type, entry.status)}</strong>
                   <span className={styles.tenue}>
                     {formatDateTime(entry.at)}, {entry.actor}
                   </span>

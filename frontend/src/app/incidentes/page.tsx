@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import type { Establishment } from "@/features/establishments/api";
-import { formatDateTime, situationLabel, STATUS_LABELS } from "@/features/incidents/labels";
+import { formatDateTime, situationLabel, statusLabel } from "@/features/incidents/labels";
 import type { Incident } from "@/features/incidents/types";
 import { serverApi } from "@/lib/server-api";
 import styles from "./incidentes.module.css";
@@ -41,8 +41,13 @@ export default async function IncidentsPage({
                     {formatDateTime(incident.detected_at)}
                   </time>
                   <span className={styles.estado} data-estado={incident.status}>
-                    {STATUS_LABELS[incident.status]}
+                    {statusLabel(incident.type, incident.status)}
                   </span>
+                  {incident.status === "detected" && (
+                    <span className={styles.revisar} aria-hidden="true">
+                      Revisar →
+                    </span>
+                  )}
                 </Link>
               </li>
             ))}
