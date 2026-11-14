@@ -12,6 +12,15 @@ from urllib.parse import parse_qs, urlsplit
 
 import httpx
 
+from bandit.shared.errors import (
+    ConflictError,
+    DomainError,
+    InvalidDataError,
+    NotFoundError,
+    RateLimitedError,
+    UnavailableError,
+)
+
 _TOKEN_MARGIN_SECONDS = 300
 _LIVE_ALREADY_EXISTS = "LV1001"
 _LIVE_MISSING = {"LV1002", "LV1005"}
@@ -101,6 +110,48 @@ def cameras_from_page(data: dict[str, object]) -> list[ImouCamera]:
     return found
 
 
+_ALREADY_MINE = "DV1003"
+_OTHER_ACCOUNT = (
+    "La cámara está vinculada a otra cuenta de Imou, por ejemplo en la app Imou Life. "
+    "Bórrala de esa app (Ajustes del dispositivo → Eliminar dispositivo) y vuelve a intentarlo."
+)
+_BIND_ERRORS: dict[str, tuple[type[DomainError], str]] = {
+    "DV1005": (
+        InvalidDataError,
+        "La cámara rechazó la clave. Usa el código de seguridad de la etiqueta o, si la "
+        "cambiaste en la app Imou Life, la clave nueva.",
+    ),
+    "DV1002": (NotFoundError, "Imou no reconoce ese número de serie: revísalo en la etiqueta."),
+    "OP1003": (InvalidDataError, "Revisa el número de serie: Imou no lo acepta."),
+    "DV1001": (ConflictError, _OTHER_ACCOUNT),
+    "DV1029": (ConflictError, _OTHER_ACCOUNT),
+    "DV1033": (ConflictError, _OTHER_ACCOUNT),
+    "DV1059": (ConflictError, _OTHER_ACCOUNT),
+    "DV1007": (
+        UnavailableError,
+        "La cámara está sin conexión. Revisa que esté encendida y conectada a internet "
+        "(en la app Imou Life debe verse en línea).",
+    ),
+    "DV1013": (
+        ConflictError,
+        "Imou pide reiniciar la cámara antes de vincularla: desconéctala, vuelve a "
+        "conectarla y, cuando esté en línea, inténtalo de nuevo.",
+    ),
+    "DV1014": (RateLimitedError, "Demasiadas claves incorrectas: Imou bloqueó la cámara 30 min."),
+    "DV1015": (RateLimitedError, "Demasiadas claves incorrectas: Imou bloqueó la cámara 24 h."),
+    "DV1008": (UnavailableError, "La cuenta de Imou de Bandit llegó a su límite de cámaras."),
+}
+
+
+def bind_error(code: str) -> DomainError:
+    """El error para el cliente según el código con que Imou rechazó la vinculación."""
+    kind, message = _BIND_ERRORS.get(
+        code,
+        (UnavailableError, f"Imou no pudo vincular la cámara (código {code}). Intenta más tarde."),
+    )
+    return kind(message)
+
+
 class ImouCloudResolver:
     def __init__(
         self,
@@ -138,6 +189,21 @@ class ImouCloudResolver:
                 if not isinstance(devices, list) or len(devices) < _PAGE_SIZE:
                     break
         return cameras
+
+    async def bind_device(self, serial: str, code: str) -> None:
+        """Agrega la cámara a la cuenta de Imou de Bandit con su clave o código de seguridad.
+
+        Los rechazos de Imou se traducen a errores con un mensaje que el cliente entiende.
+        """
+        if not self.configured:
+            raise ImouCloudError("CONFIG", "Faltan IMOU_APP_ID e IMOU_APP_SECRET")
+        try:
+            async with httpx.AsyncClient(transport=self._transport, timeout=20) as client:
+                await self._call(client, "bindDevice", {"deviceId": serial, "code": code})
+        except ImouCloudError as error:
+            if error.code == _ALREADY_MINE:
+                return
+            raise bind_error(error.code) from error
 
     async def resolve(self, url: str) -> str:
         if not self.configured:
