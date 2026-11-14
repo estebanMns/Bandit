@@ -77,6 +77,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Bandit", lifespan=lifespan)
     app.state.identity = application.identity
     app.state.ws_tickets = WsTickets(parse_origins(resolved.ws_allowed_origins))
+    app.state.public_backend_url = resolved.public_backend_url
     app.state.establishments = application.establishments
     app.state.cameras = application.cameras
     app.state.analysis = application.analysis
