@@ -48,6 +48,20 @@ class FakeCloudCamera:
     channel_name: str
     online: bool = True
 
+    @property
+    def device_id(self):
+        return self.url.removeprefix("imou://").split("/")[0]
+
+
+class Owners:
+    """Las cámaras Imou que ya son del local que se prueba."""
+
+    def __init__(self, *devices):
+        self.devices = set(devices)
+
+    async def owned_by(self, establishment_id):
+        return self.devices
+
 
 class Cloud:
     def __init__(self, configured=True, cameras=()):
@@ -78,7 +92,7 @@ class Registry:
         return value
 
 
-def build(clock, scanner, cloud, registry):
+def build(clock, scanner, cloud, registry, owners=None):
     return AutoConnect(
         ScanNetwork(scanner, clock, timedelta(0)),
         ConnectDevice(scanner, Prober(), Advisor()),
@@ -86,6 +100,7 @@ def build(clock, scanner, cloud, registry):
         registry,
         registry,
         cloud,
+        owners or Owners("ABC"),
     )
 
 
@@ -116,6 +131,18 @@ async def test_blocked_camera_falls_back_to_the_cloud(clock):
         Method.LAN: AttemptStatus.NOTHING_FOUND,
         Method.CLOUD: AttemptStatus.CONNECTED,
     }
+
+
+async def test_the_cloud_never_brings_cameras_of_another_establishment(clock):
+    cloud = Cloud(cameras=[FakeCloudCamera("imou://AJENA/0?stream=1", "Cruiser", "Lente 1")])
+    registry = Registry()
+    result = await build(clock, Scanner([]), cloud, registry, Owners()).execute(
+        uuid4(), None, "admin", ""
+    )
+
+    assert registry.urls == [] and not result.connected
+    assert result.attempts[-1].status is AttemptStatus.NEEDS_CREDENTIALS
+    assert "número de serie" in result.attempts[-1].detail
 
 
 async def test_without_cloud_credentials_it_says_what_is_missing(clock):
