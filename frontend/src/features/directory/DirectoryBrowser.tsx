@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { WantedPhoto } from "./WantedPhoto";
 import { useMemo, useState } from "react";
 import { filterDirectory, uniqueValues } from "./filter";
 import { formatReward, priorityRecords } from "./priority";
@@ -32,10 +33,11 @@ export function DirectoryBrowser({ records }: { records: WantedRecord[] }) {
               <li key={record.slug}>
                 <Link href={`/directorio/${record.slug}`} className={styles.prioritario}>
                   <span className={styles.puesto}>{index + 1}</span>
-                  {record.photo_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={record.photo_url} alt="" className={styles.fotoPrioridad} />
-                  )}
+                  <WantedPhoto
+                    src={record.photo_url}
+                    name={record.name}
+                    className={styles.fotoPrioridad}
+                  />
                   <span className={styles.nombre}>{record.name}</span>
                   <span className={styles.recompensa}>{formatReward(record)}</span>
                   {(record.crime_level ?? record.crime) && (
@@ -84,10 +86,12 @@ export function DirectoryBrowser({ records }: { records: WantedRecord[] }) {
           {visible.map((record) => (
             <li key={record.slug}>
               <Link href={`/directorio/${record.slug}`} className={styles.ficha}>
-                {record.photo_url && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={record.photo_url} alt="" loading="lazy" className={styles.foto} />
-                )}
+                <WantedPhoto
+                  src={record.photo_url}
+                  name={record.name}
+                  className={styles.foto}
+                  lazy
+                />
                 <span className={styles.nombre}>{record.name}</span>
                 {record.alias && <span>Alias {record.alias}</span>}
                 {record.crime && <span className={styles.tenue}>{record.crime}</span>}
