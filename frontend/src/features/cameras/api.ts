@@ -10,6 +10,8 @@ export interface Camera {
   status: CameraStatus;
   /** Por qué no hay video, si el backend lo sabe (nunca trae la URL ni la clave). */
   problem?: string | null;
+  /** Tipo de problema: "private_network" si el servidor no alcanza la red de la cámara. */
+  problem_kind?: string | null;
 }
 
 export function listCameras(establishmentId: string): Promise<Camera[]> {
