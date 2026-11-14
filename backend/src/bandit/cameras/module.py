@@ -5,6 +5,11 @@ from datetime import timedelta
 from bandit.cameras.application.auto_connect import AutoConnect, CameraCloud
 from bandit.cameras.application.discovery import ConnectDevice, PathAdvisor, ScanNetwork
 from bandit.cameras.application.frame_hub import FrameHub
+from bandit.cameras.application.imou_connect import (
+    AdoptImouCameras,
+    ConnectImouCamera,
+    ImouOwnership,
+)
 from bandit.cameras.application.supervisor import CaptureSupervisor
 from bandit.cameras.application.use_cases import (
     GetCamera,
@@ -15,7 +20,7 @@ from bandit.cameras.application.use_cases import (
 )
 from bandit.cameras.domain.ports import FrameSource, UrlCipher
 from bandit.cameras.infrastructure.lan_scanner import LanScanner
-from bandit.cameras.infrastructure.repositories import SqlCameraRepository
+from bandit.cameras.infrastructure.repositories import SqlCameraRepository, SqlImouOwners
 from bandit.cameras.infrastructure.rtsp_probe import RtspProbe
 from bandit.shared.clock import Clock
 from bandit.shared.db import SessionFactory
@@ -50,6 +55,18 @@ class CamerasModule:
         self.scan_network = ScanNetwork(scanner, clock, SCAN_GAP)
         self.connect_device = ConnectDevice(scanner, RtspProbe(), advisor)
         self.cloud = cloud
+        owners = SqlImouOwners(sessions)
         self.auto_connect = AutoConnect(
-            self.scan_network, self.connect_device, self.register, self.list_for, cipher, cloud
+            self.scan_network,
+            self.connect_device,
+            self.register,
+            self.list_for,
+            cipher,
+            cloud,
+            owners,
         )
+        self.connect_imou = ConnectImouCamera(
+            cloud, owners, self.register, self.list_for, cipher, clock
+        )
+        self.imou_ownership = ImouOwnership(owners)
+        self.adopt_imou = AdoptImouCameras(repository, owners, cipher)
