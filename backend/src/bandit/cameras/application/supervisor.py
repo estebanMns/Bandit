@@ -31,7 +31,10 @@ class CaptureSupervisor:
         bus: EventBus,
         clock: Clock,
         initial_backoff: float = 1.0,
+        enabled: bool = True,
     ) -> None:
+        # Apagado (CAMERA_CAPTURE_ENABLED=false) este backend solo sirve la API: otro captura.
+        self.enabled = enabled
         self._cameras = cameras
         self._source = source
         self._cipher = cipher
@@ -44,6 +47,7 @@ class CaptureSupervisor:
         self._statuses: dict[UUID, CameraStatus] = {}
         # Por qué una cámara no tiene video, para mostrarlo en la app. Nunca incluye la URL.
         self._problems: dict[UUID, str] = {}
+        self._problem_kinds: dict[UUID, str] = {}
         # URL cifrada de cada cámara que no se pudo leer: no se reintenta mientras no cambie.
         self._unreadable: dict[UUID, str] = {}
 
@@ -54,6 +58,9 @@ class CaptureSupervisor:
         problem = self._problems.get(camera_id)
         return problem[:1].upper() + problem[1:] if problem else None
 
+    def problem_kind_of(self, camera_id: UUID) -> str | None:
+        return self._problem_kinds.get(camera_id) if camera_id in self._problems else None
+
     async def start_all(self) -> None:
         for camera in await self._cameras.list_enabled():
             self.start(camera)
@@ -63,6 +70,8 @@ class CaptureSupervisor:
 
         Arranca las cámaras que otro equipo agregó o activó y detiene las que desactivó o borró.
         """
+        if not self.enabled:
+            return
         enabled = {camera.id: camera for camera in await self._cameras.list_enabled()}
         for camera in enabled.values():
             if self._unreadable.get(camera.id) != camera.encrypted_url:
@@ -71,7 +80,7 @@ class CaptureSupervisor:
             await self.stop(self._running[camera_id])
 
     def start(self, camera: Camera) -> None:
-        if camera.id in self._tasks:
+        if not self.enabled or camera.id in self._tasks:
             return
         self._running[camera.id] = camera
         self._tasks[camera.id] = asyncio.create_task(self._run(camera), name=f"captura-{camera.id}")
@@ -118,6 +127,7 @@ class CaptureSupervisor:
                 async for jpeg in self._source.stream(url):
                     if self.status_of(camera.id) is not CameraStatus.LIVE:
                         self._problems.pop(camera.id, None)
+                        self._problem_kinds.pop(camera.id, None)
                         await self._set_status(camera, CameraStatus.LIVE)
                         backoff = self._initial_backoff
                     self._hub.publish(Frame(camera.id, jpeg, self._clock.now()))
@@ -127,6 +137,10 @@ class CaptureSupervisor:
                 if self._problems.get(camera.id) != str(error):
                     logger.warning("No se puede leer la cámara %s: %s", camera.id, error)
                 self._problems[camera.id] = str(error)
+                if error.kind:
+                    self._problem_kinds[camera.id] = error.kind
+                else:
+                    self._problem_kinds.pop(camera.id, None)
             except Exception as error:
                 # Solo el tipo: el mensaje podría incluir la URL con credenciales.
                 logger.warning("Se perdió la cámara %s: %s", camera.id, type(error).__name__)
