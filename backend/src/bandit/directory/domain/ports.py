@@ -32,7 +32,9 @@ class MediaStore(Protocol):
 
     async def delete(self, name: str) -> None: ...
 
-    def path_of(self, name: str) -> str | None: ...
+    async def load(self, name: str) -> bytes | None:
+        """Contenido del archivo, o None si no existe o el nombre no es válido."""
+        ...
 
 
 class SiteRevalidator(Protocol):
