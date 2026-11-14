@@ -1,6 +1,7 @@
 """Casos de uso del directorio."""
 
 import logging
+import time
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import PurePosixPath
@@ -36,12 +37,33 @@ _ALLOWED_PHOTO_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 class ListWanted:
-    def __init__(self, records: WantedRepository) -> None:
+    """El listado cambia solo al sincronizar: se guarda en memoria y no se consulta en cada visita.
+
+    Otro backend sobre la misma base puede cambiarlo; por eso la copia vence a los pocos minutos.
+    """
+
+    def __init__(
+        self,
+        records: WantedRepository,
+        max_age_seconds: float = 300.0,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
         self._records = records
+        self._max_age = max_age_seconds
+        self._clock = clock
+        self._cached: list[WantedRecord] | None = None
+        self._cached_at = 0.0
+
+    def invalidate(self) -> None:
+        self._cached = None
 
     async def execute(self) -> list[WantedRecord]:
         """Primero la recompensa más alta, luego el delito más grave publicado."""
-        return sorted(await self._records.list_active(), key=priority_key)
+        if self._cached is not None and self._clock() - self._cached_at < self._max_age:
+            return list(self._cached)
+        records = sorted(await self._records.list_active(), key=priority_key)
+        self._cached, self._cached_at = records, self._clock()
+        return list(records)
 
 
 class GetWanted:
