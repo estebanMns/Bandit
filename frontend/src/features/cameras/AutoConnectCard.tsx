@@ -34,18 +34,11 @@ export function AutoConnectCard({ establishmentId, onConnected }: AutoConnectCar
       .catch(() => setCloudReady(false));
   }, []);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
+  async function connect(network: string | null, username: string, password: string) {
     setPending(true);
     setError(null);
     try {
-      const outcome = await autoConnect(
-        establishmentId,
-        String(data.get("network") || "") || null,
-        String(data.get("username") || "admin"),
-        String(data.get("password") || ""),
-      );
+      const outcome = await autoConnect(establishmentId, network, username, password);
       setResult(outcome);
       if (outcome.added.length > 0) onConnected();
     } catch (failure) {
@@ -53,6 +46,16 @@ export function AutoConnectCard({ establishmentId, onConnected }: AutoConnectCar
     } finally {
       setPending(false);
     }
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    await connect(
+      String(data.get("network") || "") || null,
+      String(data.get("username") || "admin"),
+      String(data.get("password") || ""),
+    );
   }
 
   const needsCloud = result?.attempts.some(
@@ -88,9 +91,24 @@ export function AutoConnectCard({ establishmentId, onConnected }: AutoConnectCar
           </p>
         )}
         {cloudReady === true && (
-          <p className={styles.nota}>
-            La nube de Imou está configurada: se usará si la red local falla.
-          </p>
+          <>
+            <p className={styles.nota}>
+              La nube de Imou está configurada: se usará si la red local falla.
+            </p>
+            {/* Desde un servidor en internet la red local no sirve: se va directo a la nube. */}
+            <Button
+              type="button"
+              variant="secundario"
+              disabled={pending}
+              onClick={() => void connect(null, "admin", "")}
+            >
+              Conectar por la nube de Imou
+            </Button>
+            <p className={styles.ayuda}>
+              Úsalo si Bandit corre en la nube (por ejemplo Render) o si la cámara está en otra
+              red: trae las cámaras de tu cuenta Imou sin clave ni búsqueda en el Wi-Fi.
+            </p>
+          </>
         )}
       </form>
 
