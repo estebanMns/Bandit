@@ -67,14 +67,19 @@ async def authenticate_websocket(websocket: WebSocket) -> User:
     origin = websocket.headers.get("origin")
     host = websocket.headers.get("host")
     tickets: WsTickets | None = getattr(websocket.app.state, "ws_tickets", None)
-    if origin and urlsplit(origin).netloc != host and not (tickets and tickets.allows(origin)):
-        # Sin esto, un WS_ALLOWED_ORIGINS mal configurado solo se ve como "reconectando".
-        logger.warning("WebSocket rechazado: el origen %s no está en WS_ALLOWED_ORIGINS", origin)
-        raise PermissionDeniedError("Origen no permitido")
-    token = websocket.cookies.get(SESSION_COOKIE)
     ticket = websocket.query_params.get("ticket")
     if ticket and tickets is not None:
+        # Un ticket válido ya prueba el origen: solo lo obtiene el propio frontend, con la
+        # cookie de sesión, y otro sitio no puede leer la respuesta.
         token = tickets.redeem(ticket)
+    else:
+        if origin and urlsplit(origin).netloc != host and not (tickets and tickets.allows(origin)):
+            # Sin esto, un origen no permitido solo se vería como "reconectando".
+            logger.warning(
+                "WebSocket rechazado: el origen %s no está en WS_ALLOWED_ORIGINS", origin
+            )
+            raise PermissionDeniedError("Origen no permitido")
+        token = websocket.cookies.get(SESSION_COOKIE)
     if not token:
         raise AuthenticationError("Inicia sesión para continuar")
     module: IdentityModule = websocket.app.state.identity
