@@ -1,23 +1,42 @@
 /**
  * URL de un WebSocket del backend.
  *
- * Detrás de Caddy (o en desarrollo) el WebSocket va al mismo dominio y la cookie de
- * sesión basta. Si el frontend vive en otro dominio (Vercel), NEXT_PUBLIC_BACKEND_WS_URL
- * apunta al backend y se pide antes un ticket de un minuto, porque el navegador no envía
- * la cookie de sesión a otro dominio. Sirve también dentro de workers.
+ * Se pide un ticket de un minuto a /api/auth/ws-ticket (con la cookie de sesión, por el mismo
+ * dominio) y el backend responde también adónde conectarse (`ws_url`). Así funciona igual detrás
+ * de Caddy que con el frontend en Vercel y el backend en Render, sin variables que haya que
+ * acertar al compilar: Vercel no reenvía WebSockets, el navegador va directo al backend.
+ * NEXT_PUBLIC_BACKEND_WS_URL, si existe, manda sobre lo que diga el backend.
+ * Sirve también dentro de workers.
  */
-const BACKEND_WS_URL = (process.env.NEXT_PUBLIC_BACKEND_WS_URL ?? "").replace(/\/$/, "");
+const OVERRIDE = (process.env.NEXT_PUBLIC_BACKEND_WS_URL ?? "").replace(/\/$/, "");
+
+interface TicketResponse {
+  ticket: string;
+  ws_url?: string;
+}
+
+function sameOrigin(path: string): string {
+  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${location.host}${path}`;
+}
 
 export async function backendSocketUrl(path: string): Promise<string> {
-  if (!BACKEND_WS_URL) {
-    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    return `${protocol}//${location.host}${path}`;
+  let response: Response;
+  try {
+    response = await fetch("/api/auth/ws-ticket", {
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+  } catch {
+    return sameOrigin(path);
   }
-  const response = await fetch("/api/auth/ws-ticket", {
-    credentials: "same-origin",
-    cache: "no-store",
-  });
-  if (!response.ok) throw new Error(`No se pudo obtener el ticket (${response.status})`);
-  const { ticket } = (await response.json()) as { ticket: string };
-  return `${BACKEND_WS_URL}${path}?ticket=${encodeURIComponent(ticket)}`;
+  if (!response.ok) {
+    // Sin sesión no hay ticket: con un backend en otro dominio no hay cómo conectarse.
+    if (OVERRIDE) throw new Error(`No se pudo obtener el ticket (${response.status})`);
+    return sameOrigin(path);
+  }
+  const { ticket, ws_url: backend } = (await response.json()) as TicketResponse;
+  const base = (OVERRIDE || backend || "").replace(/\/$/, "");
+  if (!base) return sameOrigin(path);
+  return `${base}${path}?ticket=${encodeURIComponent(ticket)}`;
 }
