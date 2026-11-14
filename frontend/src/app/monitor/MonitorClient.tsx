@@ -9,6 +9,7 @@ import { chooseDecision } from "@/features/incidents/decision";
 import { DecisionPanel } from "@/features/incidents/DecisionPanel";
 import { ShiftLine } from "@/features/incidents/ShiftLine";
 import { useIncidents } from "@/features/incidents/useIncidents";
+import { CloudSwitch } from "@/features/cameras/CloudSwitch";
 import { CameraView } from "@/features/video/CameraView";
 import styles from "./monitor.module.css";
 
@@ -19,6 +20,8 @@ export function MonitorClient() {
   const [cameras, setCameras] = useState<Camera[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
+  // Sube al cambiar las cámaras desde aquí, para volver a pedir la lista enseguida.
+  const [camerasVersion, setCamerasVersion] = useState(0);
   const { incidents, connection, apply } = useIncidents(current?.id);
 
   useEffect(() => {
@@ -38,7 +41,7 @@ export function MonitorClient() {
       active = false;
       clearInterval(timer);
     };
-  }, [current]);
+  }, [current, camerasVersion]);
 
   const featured = cameras.find((camera) => camera.id === selectedCameraId) ?? cameras[0];
   const others = cameras.filter((camera) => camera.id !== featured?.id);
@@ -68,6 +71,10 @@ export function MonitorClient() {
               name={featured.name}
               problem={featured.problem}
               featured
+            />
+            <CloudSwitch
+              camera={featured}
+              onDone={() => setCamerasVersion((version) => version + 1)}
             />
           </section>
         )}
