@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     # Orígenes extra que pueden abrir WebSockets, separados por coma (p. ej. el dominio de
     # Vercel). Vacío = solo el mismo dominio del backend, como detrás de Caddy.
     ws_allowed_origins: str = ""
+    # Dirección pública de este backend, para que el frontend sepa adónde abrir los WebSockets.
+    # Render la define sola (RENDER_EXTERNAL_URL). Vacía = se deduce de cada petición.
+    public_backend_url: str = Field(
+        default="", validation_alias=AliasChoices("PUBLIC_BACKEND_URL", "RENDER_EXTERNAL_URL")
+    )
     bootstrap_admin_email: str = ""
     bootstrap_admin_password: str = ""
     # Solo para pruebas: crea la cuenta admin/admin. Apágalo en un local real.
