@@ -1,0 +1,11 @@
+/* Reemplazo de la foto: mismas medidas que la imagen, con las iniciales al centro. */
+.iniciales {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(160deg, var(--superficie-solida), var(--fondo));
+  color: var(--texto-tenue);
+  font-family: var(--fuente-titulo);
+  font-size: clamp(1.5rem, 4vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}

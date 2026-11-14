@@ -2,6 +2,7 @@
 
 import secrets
 from typing import Annotated
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, Response, status
@@ -137,14 +138,30 @@ async def me(user: CurrentUser) -> UserResponse:
 
 class WsTicketResponse(BaseModel):
     ticket: str
+    # Adónde abrir los WebSockets: el propio backend (wss://… en producción).
+    ws_url: str
+
+
+def socket_base_url(request: Request, public_url: str) -> str:
+    """Dirección del backend para WebSockets, sin depender de variables del frontend."""
+    if public_url:
+        parts = urlsplit(public_url)
+        scheme = "wss" if parts.scheme == "https" else "ws"
+        return f"{scheme}://{parts.netloc}"
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme).split(",")[0].strip()
+    host = request.headers.get("host") or request.url.netloc
+    return f"{'wss' if proto == 'https' else 'ws'}://{host}"
 
 
 @router.get("/ws-ticket")
 async def ws_ticket(request: Request, response: Response, _: CurrentUser) -> WsTicketResponse:
-    """Ticket de un minuto para abrir WebSockets cuando el frontend está en otro dominio."""
+    """Ticket de un minuto para abrir WebSockets, con la dirección a la que conectarse."""
     tickets: WsTickets = request.app.state.ws_tickets
     response.headers["Cache-Control"] = "no-store"
-    return WsTicketResponse(ticket=tickets.issue(request.cookies[SESSION_COOKIE]))
+    return WsTicketResponse(
+        ticket=tickets.issue(request.cookies[SESSION_COOKIE]),
+        ws_url=socket_base_url(request, request.app.state.public_backend_url),
+    )
 
 
 @router.post("/users", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_csrf)])

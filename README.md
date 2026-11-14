@@ -70,20 +70,25 @@ Funciona igual en Mac con Apple Silicon o Intel: las imágenes de Docker son mul
 ### Producción: frontend en Vercel y backend en Render
 
 El navegador habla con Vercel; Vercel pasa `/api/*` al backend, pero **no reenvía WebSockets**:
-el video y los eventos en vivo van directo del navegador a Render, con un ticket de un minuto.
+el video y los eventos en vivo van directo del navegador a Render. Para eso el navegador pide un
+ticket de un minuto a `/api/auth/ws-ticket` y el backend le responde también **su propia
+dirección** (Render la publica sola en `RENDER_EXTERNAL_URL`). No hace falta configurar nada más.
 
 **Variables en Vercel** (son de compilación: después de cambiarlas, vuelve a desplegar):
 
 | Variable | Valor |
 |---|---|
 | `BACKEND_INTERNAL_URL` | `https://<tu-backend>.onrender.com` |
-| `NEXT_PUBLIC_BACKEND_WS_URL` | `wss://<tu-backend>.onrender.com` |
+| `NEXT_PUBLIC_BACKEND_WS_URL` | Opcional: solo si quieres forzar otra dirección de WebSocket (`wss://…`). Debe empezar por `NEXT_PUBLIC_`. |
+
+`frontend/vercel.json` ubica las funciones de Vercel en Oregón (`pdx1`), junto a Supabase
+(us-west-2), para que las páginas que se arman en el servidor no crucen el continente.
 
 **Variables en Render:**
 
 | Variable | Para qué |
 |---|---|
-| `WS_ALLOWED_ORIGINS` | Dominios de Vercel que pueden abrir WebSockets, separados por coma. Acepta un comodín para las vistas previas: `https://bandit.vercel.app,https://*-<tu-equipo>.vercel.app`. Un origen rechazado queda en el registro: "WebSocket rechazado: el origen …" |
+| `WS_ALLOWED_ORIGINS` | Opcional. Con el ticket no hace falta: solo el propio frontend puede obtenerlo. Sirve para conexiones con cookie desde otro dominio; acepta un comodín para las vistas previas (`https://*-<tu-equipo>.vercel.app`). |
 | `CAMERA_ENCRYPTION_KEY` | La misma con la que se guardaron las cámaras. |
 | `IMOU_APP_ID`, `IMOU_APP_SECRET`, `IMOU_API_URL` | Video de las cámaras Imou por su nube (ver abajo). |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET` | Evidencia y fotos del directorio en Supabase Storage. Sin esto se guardan en el disco de Render, que se borra en cada despliegue, y las imágenes salen en negro. Crea antes un bucket **privado** (`bandit`). |
@@ -100,8 +105,22 @@ probar), ponle `CAMERA_CAPTURE_ENABLED=false`, o mejor usa otra base para las pr
 dos capturan y analizan a la vez, las alertas salen duplicadas y la cuota de Gemini se gasta el
 doble.
 
-**Plan gratuito de Render.** El servicio se duerme tras unos minutos sin visitas y la captura de
-cámaras se detiene hasta la siguiente visita. Para vigilancia continua usa un plan pagado.
+**Imágenes que quedaron en un PC.** La evidencia y las fotos del directorio que se guardaron en
+el disco de otro equipo no existen en Render. Con las variables de Supabase en ese equipo, súbelas
+una vez (no borra nada del disco):
+
+```bash
+docker compose exec backend python -m bandit.tools.upload_media
+```
+
+Las fotos del directorio también se vuelven a descargar en la siguiente sincronización de Render
+(Analítica → Directorio → Actualizar ahora). Mientras falte una foto, se muestran las iniciales.
+
+**Plan gratuito de Render.** Tiene muy poca CPU y se duerme tras unos minutos sin visitas: la
+primera visita después tarda unos 50 segundos y la captura de cámaras se detiene mientras duerme.
+Para vigilancia continua usa un plan pagado. Para gastar menos CPU baja `VIDEO_FPS` (por ejemplo a
+2) y, si solo quieres que no se duerma, un monitor como UptimeRobot puede visitar `/api/health`
+cada 10 minutos.
 
 ### Correr sin Docker en Windows (para depurar)
 

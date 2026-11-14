@@ -1,3 +1,4 @@
+import { WantedPhoto } from "@/features/directory/WantedPhoto";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -41,10 +42,12 @@ export default async function WantedPage({ params }: PageProps) {
     <main className={styles.pagina}>
       <Link href="/directorio">Volver al directorio</Link>
       <div className={styles.detalle}>
-        {record.photo_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={record.photo_url} alt={`Foto publicada de ${record.name}`} className={styles.foto} />
-        )}
+        <WantedPhoto
+          src={record.photo_url}
+          name={record.name}
+          alt={`Foto publicada de ${record.name}`}
+          className={styles.foto}
+        />
         <div className={styles.pagina}>
           <h1 className={styles.titulo}>{record.name}</h1>
           <dl className={styles.datos}>

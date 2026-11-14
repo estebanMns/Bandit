@@ -28,6 +28,16 @@ from bandit.shared.db import SessionFactory
 MANUAL_SYNC_GAP = timedelta(minutes=30)
 
 
+class _ListingRevalidator:
+    def __init__(self, inner: SiteRevalidator, listing: ListWanted) -> None:
+        self._inner = inner
+        self._listing = listing
+
+    async def revalidate(self) -> None:
+        self._listing.invalidate()
+        await self._inner.revalidate()
+
+
 class DirectoryModule:
     def __init__(
         self,
@@ -43,6 +53,8 @@ class DirectoryModule:
         repository = SqlWantedRepository(sessions)
         self.media = media
         self.list_active = ListWanted(repository)
+        # Cada cambio del directorio avisa al sitio; de paso vacía la copia del listado.
+        revalidator = _ListingRevalidator(revalidator, self.list_active)
         self.get = GetWanted(repository)
         self.local_tests = LocalTestRecords(repository, media, revalidator, clock, smlmv_cop)
         self.sync = SyncDirectory(
