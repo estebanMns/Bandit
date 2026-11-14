@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { ApiError } from "@/lib/api";
-import { autoConnect, connectionOptions, type AutoConnectResult } from "./api";
+import { autoConnect, type AutoConnectResult } from "./api";
+import { ImouConnectForm } from "./ImouConnectForm";
 import styles from "./AutoConnectCard.module.css";
 
 const METHOD: Record<string, string> = {
@@ -21,18 +22,14 @@ interface AutoConnectCardProps {
   onConnected: () => void;
 }
 
-/** Un botón: Bandit prueba la red local y, si no alcanza, la nube de Imou. */
+/**
+ * Lo normal: la cámara Imou con su número de serie y su clave, por internet. Si Bandit está en
+ * el mismo Wi-Fi que la cámara, también puede buscarla en la red.
+ */
 export function AutoConnectCard({ establishmentId, onConnected }: AutoConnectCardProps) {
-  const [cloudReady, setCloudReady] = useState<boolean | null>(null);
   const [result, setResult] = useState<AutoConnectResult | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    connectionOptions()
-      .then((options) => setCloudReady(options.imou_cloud))
-      .catch(() => setCloudReady(false));
-  }, []);
 
   async function connect(network: string | null, username: string, password: string) {
     setPending(true);
@@ -58,59 +55,46 @@ export function AutoConnectCard({ establishmentId, onConnected }: AutoConnectCar
     );
   }
 
-  const needsCloud = result?.attempts.some(
-    (attempt) => attempt.method === "nube_imou" && attempt.status === "sin_configurar",
-  );
-
   return (
     <div className={styles.tarjeta}>
-      <form className={styles.formulario} onSubmit={submit}>
-        <Field
-          label="Red de tu Wi-Fi"
-          name="network"
-          defaultValue="192.168.1.0/24"
-          hint="Déjala así si la IP de tu computador empieza por 192.168.1."
-        />
-        <div className={styles.fila}>
-          <Field label="Usuario" name="username" defaultValue="admin" autoComplete="off" />
-          <PasswordField
-            label="Clave o código de la etiqueta"
-            name="password"
-            autoComplete="off"
-            hint="Solo para la red local. Nunca se envía a la IA."
+      <h3 className={styles.titulo}>Cámara Imou por internet</h3>
+      <ImouConnectForm
+        establishmentId={establishmentId}
+        onConnected={(outcome) => {
+          if (outcome.added.length > 0) onConnected();
+        }}
+      />
+
+      <details className={styles.guia}>
+        <summary>¿Bandit está en el mismo Wi-Fi que la cámara? Búscala en la red</summary>
+        <form className={styles.formulario} onSubmit={submit}>
+          <Field
+            label="Red de tu Wi-Fi"
+            name="network"
+            defaultValue="192.168.1.0/24"
+            hint="Déjala así si la IP de tu computador empieza por 192.168.1."
           />
-        </div>
-        <Button type="submit" disabled={pending}>
-          {pending
-            ? "Buscando y conectando… (hasta un minuto)"
-            : "Conectar mi cámara automáticamente"}
-        </Button>
-        {error && (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        )}
-        {cloudReady === true && (
-          <>
-            <p className={styles.nota}>
-              La nube de Imou está configurada: se usará si la red local falla.
+          <div className={styles.fila}>
+            <Field label="Usuario" name="username" defaultValue="admin" autoComplete="off" />
+            <PasswordField
+              label="Clave o código de la etiqueta"
+              name="password"
+              autoComplete="off"
+              hint="Solo para la red local. Nunca se envía a la IA."
+            />
+          </div>
+          <Button type="submit" disabled={pending}>
+            {pending
+              ? "Buscando y conectando… (hasta un minuto)"
+              : "Conectar mi cámara automáticamente"}
+          </Button>
+          {error && (
+            <p className={styles.error} role="alert">
+              {error}
             </p>
-            {/* Desde un servidor en internet la red local no sirve: se va directo a la nube. */}
-            <Button
-              type="button"
-              variant="secundario"
-              disabled={pending}
-              onClick={() => void connect(null, "admin", "")}
-            >
-              Conectar por la nube de Imou
-            </Button>
-            <p className={styles.ayuda}>
-              Úsalo si Bandit corre en la nube (por ejemplo Render) o si la cámara está en otra
-              red: trae las cámaras de tu cuenta Imou sin clave ni búsqueda en el Wi-Fi.
-            </p>
-          </>
-        )}
-      </form>
+          )}
+        </form>
+      </details>
 
       {result && (
         <div className={styles.resultado} role="status">
@@ -135,29 +119,6 @@ export function AutoConnectCard({ establishmentId, onConnected }: AutoConnectCar
             ))}
           </ol>
         </div>
-      )}
-
-      {(needsCloud || cloudReady === false) && !result?.connected && (
-        <details className={styles.guia} open={Boolean(needsCloud)}>
-          <summary>Si la cámara no responde en tu red: conéctala por la nube de Imou</summary>
-          <ol>
-            <li>
-              Entra a{" "}
-              <a href="https://open.imoulife.com" target="_blank" rel="noreferrer">
-                open.imoulife.com
-              </a>{" "}
-              con la misma cuenta de la app Imou Life.
-            </li>
-            <li>
-              Crea una aplicación y copia su <strong>App ID</strong> y <strong>App Secret</strong>.
-            </li>
-            <li>
-              Ponlos en el archivo <code>.env</code> como <code>IMOU_APP_ID</code> e{" "}
-              <code>IMOU_APP_SECRET</code> y reinicia con <code>docker compose up -d backend</code>.
-            </li>
-            <li>Vuelve aquí y pulsa el botón otra vez: Bandit encontrará tus cámaras solo.</li>
-          </ol>
-        </details>
       )}
     </div>
   );
