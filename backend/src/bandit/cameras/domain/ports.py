@@ -20,6 +20,22 @@ class CameraRepository(Protocol):
 
     async def list_enabled(self) -> list[Camera]: ...
 
+    async def list_all(self) -> list[Camera]: ...
+
+
+class ImouOwners(Protocol):
+    """A qué local pertenece cada cámara Imou (por su número de serie).
+
+    La cuenta de Imou de Bandit es una sola para todos los clientes: sin este registro, un local
+    podría ver las cámaras de otro.
+    """
+
+    async def owner_of(self, device_id: str) -> UUID | None: ...
+
+    async def claim(self, device_id: str, establishment_id: UUID) -> None: ...
+
+    async def owned_by(self, establishment_id: UUID) -> set[str]: ...
+
 
 PRIVATE_NETWORK = "private_network"
 
