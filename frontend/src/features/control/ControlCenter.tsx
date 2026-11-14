@@ -6,6 +6,7 @@ import { ControlShell } from "@/components/ControlShell";
 import { listWanted } from "@/features/activity/api";
 import { useActivity } from "@/features/activity/useActivity";
 import { listCameras, type Camera } from "@/features/cameras/api";
+import { CloudSwitch } from "@/features/cameras/CloudSwitch";
 import { AutoConnectCard } from "@/features/cameras/AutoConnectCard";
 import { formatReward, priorityRecords } from "@/features/directory/priority";
 import type { WantedRecord } from "@/features/directory/types";
@@ -190,6 +191,7 @@ export function ControlCenter() {
                     bare
                     onMetrics={(value) => report(camera.id, value)}
                   />
+                  <CloudSwitch camera={camera} onDone={() => void loadCameras()} />
                   <span className={styles.etiqueta}>
                     <span className={styles.punto} data-ok={live} aria-hidden="true" />
                     CAM-0{index + 1} · {camera.name}
