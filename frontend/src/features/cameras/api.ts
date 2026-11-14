@@ -120,3 +120,20 @@ export function autoConnect(
 export function connectionOptions(): Promise<{ imou_cloud: boolean }> {
   return api("/api/cameras/connection-options");
 }
+
+export interface ImouConnectResult {
+  added: string[];
+  already: number;
+}
+
+/** Vincula una cámara Imou con el número de serie y la clave de su etiqueta. */
+export function connectImou(
+  establishmentId: string,
+  serial: string,
+  code: string,
+): Promise<ImouConnectResult> {
+  return api(`/api/establishments/${establishmentId}/cameras/imou`, {
+    method: "POST",
+    body: JSON.stringify({ serial, code }),
+  });
+}
