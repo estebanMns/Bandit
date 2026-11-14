@@ -67,21 +67,41 @@ Funciona igual en Mac con Apple Silicon o Intel: las imágenes de Docker son mul
    ni nube. Si no, usa el puente (`bash relay/iniciar-puente.sh`, que también corre en macOS) o la
    nube de Imou.
 
-### Producción: frontend en Vercel y backend en la nube
+### Producción: frontend en Vercel y backend en Render
 
-Un backend en internet **no alcanza una cámara con IP privada** (`192.168.x.x`, `10.x.x.x`):
-esa dirección solo existe dentro del Wi-Fi del local. El video queda en "Conectando" y Bandit
-lo explica en la vista de la cámara ("Está en una red privada…"). Hay dos salidas:
+El navegador habla con Vercel; Vercel pasa `/api/*` al backend, pero **no reenvía WebSockets**:
+el video y los eventos en vivo van directo del navegador a Render, con un ticket de un minuto.
 
-1. **Cámaras Imou por su nube** (recomendado): pon `IMOU_APP_ID` e `IMOU_APP_SECRET` en el
-   backend de producción y usa **Conectar mi cámara automáticamente**. La red local falla (es
-   normal desde la nube) y Bandit registra la cámara como `imou://…`, que sí se alcanza.
-2. **Backend en el local**: corre el backend con Docker en un equipo del local y deja solo el
-   frontend en Vercel, conectado por un túnel seguro (Cloudflare Tunnel o Tailscale).
+**Variables en Vercel** (son de compilación: después de cambiarlas, vuelve a desplegar):
 
-Nunca abras el puerto 554 del router hacia internet. El backend de producción debe usar la misma
-`CAMERA_ENCRYPTION_KEY` con la que se guardaron las cámaras, y conviene definir
-`GEMINI_FALLBACK_MODELS` para que la IA siga funcionando si un modelo se queda sin cuota.
+| Variable | Valor |
+|---|---|
+| `BACKEND_INTERNAL_URL` | `https://<tu-backend>.onrender.com` |
+| `NEXT_PUBLIC_BACKEND_WS_URL` | `wss://<tu-backend>.onrender.com` |
+
+**Variables en Render:**
+
+| Variable | Para qué |
+|---|---|
+| `WS_ALLOWED_ORIGINS` | Dominios de Vercel que pueden abrir WebSockets, separados por coma. Acepta un comodín para las vistas previas: `https://bandit.vercel.app,https://*-<tu-equipo>.vercel.app`. Un origen rechazado queda en el registro: "WebSocket rechazado: el origen …" |
+| `CAMERA_ENCRYPTION_KEY` | La misma con la que se guardaron las cámaras. |
+| `IMOU_APP_ID`, `IMOU_APP_SECRET`, `IMOU_API_URL` | Video de las cámaras Imou por su nube (ver abajo). |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET` | Evidencia y fotos del directorio en Supabase Storage. Sin esto se guardan en el disco de Render, que se borra en cada despliegue, y las imágenes salen en negro. Crea antes un bucket **privado** (`bandit`). |
+| `GEMINI_FALLBACK_MODELS` | Respaldos si un modelo de Gemini se queda sin cuota. |
+
+**Cámaras en una red privada.** Un backend en internet no alcanza una cámara con IP privada
+(`192.168.x.x`, `10.x.x.x`). La vista de la cámara lo explica y, si la nube de Imou está
+configurada, ofrece **"Conectar por la nube de Imou"**: agrega los lentes como `imou://…` y
+desactiva la cámara privada. La otra salida es correr el backend en el local, en la misma red
+que la cámara, y dejar solo el frontend en Vercel. Nunca abras el puerto 554 del router.
+
+**Un solo backend captura.** Si otro backend usa la misma base (por ejemplo Docker en un PC para
+probar), ponle `CAMERA_CAPTURE_ENABLED=false`, o mejor usa otra base para las pruebas: si no, los
+dos capturan y analizan a la vez, las alertas salen duplicadas y la cuota de Gemini se gasta el
+doble.
+
+**Plan gratuito de Render.** El servicio se duerme tras unos minutos sin visitas y la captura de
+cámaras se detiene hasta la siguiente visita. Para vigilancia continua usa un plan pagado.
 
 ### Correr sin Docker en Windows (para depurar)
 
