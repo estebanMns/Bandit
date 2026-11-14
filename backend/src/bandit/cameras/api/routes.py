@@ -135,6 +135,7 @@ async def create_camera(
     establishment_id: UUID, body: CreateCameraRequest, user: ManagerUser, module: Module
 ) -> CameraResponse:
     _ensure_access(user, establishment_id)
+    await module.imou_ownership.ensure(establishment_id, body.url)
     return _response(await module.register.execute(establishment_id, body.name, body.url), module)
 
 
@@ -260,3 +261,26 @@ async def auto_connect(
             for a in result.attempts
         ],
     )
+
+
+class ImouConnectRequest(BaseModel):
+    serial: str = Field(min_length=6, max_length=64)
+    code: str = Field(default="", max_length=200)
+
+
+class ImouConnectResponse(BaseModel):
+    added: list[str]
+    already: int
+
+
+@router.post(
+    "/establishments/{establishment_id}/cameras/imou",
+    dependencies=[Depends(require_csrf)],
+)
+async def connect_imou(
+    establishment_id: UUID, body: ImouConnectRequest, user: ManagerUser, module: Module
+) -> ImouConnectResponse:
+    """Vincula una cámara Imou con su número de serie y su clave. Nunca devuelve la clave."""
+    _ensure_access(user, establishment_id)
+    result = await module.connect_imou.execute(establishment_id, body.serial, body.code)
+    return ImouConnectResponse(added=result.added, already=result.already)
