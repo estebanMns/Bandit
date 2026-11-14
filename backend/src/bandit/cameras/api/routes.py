@@ -51,6 +51,8 @@ class CameraResponse(BaseModel):
     status: CameraStatus
     # Por qué no hay video, si se sabe (nunca incluye la URL ni la clave).
     problem: str | None = None
+    # Tipo de problema, para ofrecer la salida: "private_network" → conectar por la nube de Imou.
+    problem_kind: str | None = None
 
 
 class ScanRequest(BaseModel):
@@ -107,6 +109,7 @@ def _response(camera: Camera, module: CamerasModule) -> CameraResponse:
         enabled=camera.enabled,
         status=module.supervisor.status_of(camera.id),
         problem=module.supervisor.problem_of(camera.id),
+        problem_kind=module.supervisor.problem_kind_of(camera.id),
     )
 
 

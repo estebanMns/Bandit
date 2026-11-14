@@ -60,6 +60,13 @@ class Settings(BaseSettings):
     revalidate_secret: str = ""
     frontend_internal_url: str = "http://frontend:3000"
     media_root: str = "./var/media"
+    # Archivos compartidos por todos los backends (evidencia y fotos del directorio). Con los
+    # tres definidos se usa Supabase Storage; si no, el disco de este backend (media_root).
+    supabase_url: str = ""
+    supabase_service_role_key: str = ""
+    supabase_storage_bucket: str = "bandit"
+    # Con varios backends sobre la misma base, solo uno debe capturar y analizar las cámaras.
+    camera_capture_enabled: bool = True
 
     evidence_retention_days: int = Field(default=7, ge=1)
     ffmpeg_path: str = "ffmpeg"

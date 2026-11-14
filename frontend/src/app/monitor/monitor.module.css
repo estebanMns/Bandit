@@ -11,6 +11,7 @@
 }
 
 .principal {
+  position: relative;
   grid-area: principal;
   padding: 10px;
 }

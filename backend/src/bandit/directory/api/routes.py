@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from bandit.directory.domain.models import CRIME_LEVELS, SyncRun, WantedRecord, crime_level
@@ -128,13 +128,13 @@ async def sync_status(module: DirectoryModule) -> SyncStatusResponse:
 
 
 @router.get("/media/{name}")
-async def get_media(name: str, module: Module) -> FileResponse:
-    path = module.media.path_of(name)
+async def get_media(name: str, module: Module) -> Response:
     media_type = _MEDIA_TYPES.get(name[name.rfind(".") :].lower())
-    if path is None or media_type is None:
+    content = await module.media.load(name) if media_type else None
+    if content is None or media_type is None:
         raise NotFoundError("El archivo no existe")
-    return FileResponse(
-        path,
+    return Response(
+        content,
         media_type=media_type,
         headers={
             "Cross-Origin-Resource-Policy": "same-origin",

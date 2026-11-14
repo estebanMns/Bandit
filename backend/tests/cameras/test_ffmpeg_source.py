@@ -63,5 +63,6 @@ async def test_ffmpeg_ending_without_frames_is_explained(tmp_path):
     source = FfmpegFrameSource(sys.executable, fps=1, width=320)
     source._arguments = lambda url: [str(fake)]  # type: ignore[method-assign]
 
-    with pytest.raises(FrameSourceUnavailableError, match="red privada"):
+    with pytest.raises(FrameSourceUnavailableError, match="red privada") as raised:
         await first_frame(source)
+    assert raised.value.kind == "private_network"

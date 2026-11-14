@@ -34,10 +34,13 @@ class CamerasModule:
         clock: Clock,
         advisor: PathAdvisor,
         cloud: CameraCloud,
+        capture_enabled: bool = True,
     ) -> None:
         repository = SqlCameraRepository(sessions)
         self.frames = FrameHub()
-        self.supervisor = CaptureSupervisor(repository, source, cipher, self.frames, bus, clock)
+        self.supervisor = CaptureSupervisor(
+            repository, source, cipher, self.frames, bus, clock, enabled=capture_enabled
+        )
         self.register = RegisterCamera(repository, cipher, self.supervisor)
         self.get = GetCamera(repository)
         self.list_for = ListCameras(repository)

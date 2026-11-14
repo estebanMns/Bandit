@@ -27,7 +27,7 @@ from bandit.cameras.infrastructure.gemini_path_advisor import (
 from bandit.cameras.infrastructure.imou_cloud import ImouCloudResolver
 from bandit.cameras.infrastructure.resolving_source import ResolvingFrameSource
 from bandit.cameras.module import CamerasModule
-from bandit.directory.domain.ports import DirectoryAgent
+from bandit.directory.domain.ports import DirectoryAgent, MediaStore
 from bandit.directory.infrastructure import tables as directory_tables  # noqa: F401
 from bandit.directory.infrastructure.file_media import FileMediaStore
 from bandit.directory.infrastructure.gemini_agent import (
@@ -36,6 +36,7 @@ from bandit.directory.infrastructure.gemini_agent import (
 )
 from bandit.directory.infrastructure.next_revalidator import NextRevalidator
 from bandit.directory.infrastructure.polite_fetcher import PoliteFetcher
+from bandit.directory.infrastructure.supabase_media import SupabaseMediaStore
 from bandit.directory.module import DirectoryModule
 from bandit.establishments.infrastructure import tables as establishment_tables  # noqa: F401
 from bandit.establishments.infrastructure.nominatim import NominatimGeocoder
@@ -48,8 +49,10 @@ from bandit.faces.module import FacesModule
 from bandit.identity.infrastructure import tables as identity_tables  # noqa: F401
 from bandit.identity.module import IdentityModule
 from bandit.incidents.domain.models import Incident, IncidentChanged, IncidentConfirmed
+from bandit.incidents.domain.ports import EvidenceStore
 from bandit.incidents.infrastructure import tables as incident_tables  # noqa: F401
 from bandit.incidents.infrastructure.file_evidence import FileEvidenceStore
+from bandit.incidents.infrastructure.supabase_evidence import SupabaseEvidenceStore
 from bandit.incidents.module import IncidentsModule
 from bandit.notifications.domain.models import AlertDelivered, AlertFailed
 from bandit.notifications.infrastructure import tables as notification_tables  # noqa: F401
@@ -69,6 +72,7 @@ from bandit.shared.config import Settings
 from bandit.shared.db import create_engine, create_session_factory
 from bandit.shared.events import EventBus, InMemoryEventBus
 from bandit.shared.gemini import model_list
+from bandit.shared.supabase_storage import SupabaseStorage
 
 
 @dataclass(slots=True)
@@ -125,6 +129,28 @@ def _directory_agent(settings: Settings) -> DirectoryAgent:
     if not settings.gemini_api_key:
         return DisabledDirectoryAgent()
     return GeminiDirectoryAgent(settings.gemini_api_key, _text_model(settings))
+
+
+def _shared_storage(settings: Settings) -> SupabaseStorage | None:
+    if not (settings.supabase_url and settings.supabase_service_role_key):
+        return None
+    return SupabaseStorage(
+        settings.supabase_url, settings.supabase_service_role_key, settings.supabase_storage_bucket
+    )
+
+
+def _evidence_store(settings: Settings) -> EvidenceStore:
+    storage = _shared_storage(settings)
+    if storage is not None:
+        return SupabaseEvidenceStore(storage)
+    return FileEvidenceStore(str(Path(settings.media_root) / "evidence"))
+
+
+def _media_store(settings: Settings) -> MediaStore:
+    storage = _shared_storage(settings)
+    if storage is not None:
+        return SupabaseMediaStore(storage)
+    return FileMediaStore(str(Path(settings.media_root) / "directory"))
 
 
 def _faces_module(
@@ -248,13 +274,14 @@ def build_application(settings: Settings) -> Application:
         clock,
         _path_advisor(settings),
         imou,
+        capture_enabled=settings.camera_capture_enabled,
     )
     analysis = AnalysisModule(
         cameras.frames, cameras.get, _scene_analyzer(settings), settings, bus, clock
     )
     incidents = IncidentsModule(
         sessions,
-        FileEvidenceStore(str(Path(settings.media_root) / "evidence")),
+        _evidence_store(settings),
         establishments.get,
         bus,
         clock,
@@ -278,7 +305,7 @@ def build_application(settings: Settings) -> Application:
         sessions,
         _directory_agent(settings),
         PoliteFetcher(),
-        FileMediaStore(str(Path(settings.media_root) / "directory")),
+        _media_store(settings),
         NextRevalidator(settings.frontend_internal_url, settings.revalidate_secret),
         clock,
         timedelta(hours=settings.directory_scrape_interval_hours),

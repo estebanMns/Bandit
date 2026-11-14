@@ -1,0 +1,33 @@
+/* Salida para una cámara que el servidor no alcanza: pasarla a la nube de Imou. */
+
+.caja {
+  position: absolute;
+  inset: auto 0 18% 0;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 0 16px;
+}
+
+.boton {
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accion);
+  color: var(--sobre-accion);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.boton:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.mensaje {
+  max-width: 32rem;
+  color: var(--hielo-tenue);
+  font-size: var(--t-sm);
+  text-align: center;
+}

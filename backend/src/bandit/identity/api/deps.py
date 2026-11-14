@@ -1,6 +1,7 @@
 """Dependencias HTTP y WebSocket de autenticación."""
 
 import hmac
+import logging
 from typing import Annotated
 from urllib.parse import urlsplit
 
@@ -10,6 +11,8 @@ from bandit.identity.api.ws_tickets import WsTickets
 from bandit.identity.domain.models import Role, User
 from bandit.identity.module import IdentityModule
 from bandit.shared.errors import AuthenticationError, PermissionDeniedError
+
+logger = logging.getLogger(__name__)
 
 SESSION_COOKIE = "bandit_session"
 CSRF_COOKIE = "bandit_csrf"
@@ -64,8 +67,9 @@ async def authenticate_websocket(websocket: WebSocket) -> User:
     origin = websocket.headers.get("origin")
     host = websocket.headers.get("host")
     tickets: WsTickets | None = getattr(websocket.app.state, "ws_tickets", None)
-    allowed = tickets.allowed_origins if tickets else set()
-    if origin and urlsplit(origin).netloc != host and origin.rstrip("/") not in allowed:
+    if origin and urlsplit(origin).netloc != host and not (tickets and tickets.allows(origin)):
+        # Sin esto, un WS_ALLOWED_ORIGINS mal configurado solo se ve como "reconectando".
+        logger.warning("WebSocket rechazado: el origen %s no está en WS_ALLOWED_ORIGINS", origin)
         raise PermissionDeniedError("Origen no permitido")
     token = websocket.cookies.get(SESSION_COOKIE)
     ticket = websocket.query_params.get("ticket")

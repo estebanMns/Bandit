@@ -236,7 +236,9 @@ async def test_the_reason_for_missing_video_is_shown_until_video_arrives(
         async def stream(self, url):
             self.calls += 1
             if self.calls == 1:
-                raise FrameSourceUnavailableError("la cámara 192.168.1.20 no entregó video")
+                raise FrameSourceUnavailableError(
+                    "la cámara 192.168.1.20 no entregó video", "private_network"
+                )
             await gate.wait()
             yield b"imagen"
             await asyncio.Event().wait()
@@ -247,8 +249,34 @@ async def test_the_reason_for_missing_video_is_shown_until_video_arrives(
 
     await wait_until(lambda: module.supervisor.problem_of(camera.id) is not None)
     assert module.supervisor.problem_of(camera.id) == "La cámara 192.168.1.20 no entregó video"
+    assert module.supervisor.problem_kind_of(camera.id) == "private_network"
 
     gate.set()
     await wait_until(lambda: module.supervisor.status_of(camera.id) is CameraStatus.LIVE)
     assert module.supervisor.problem_of(camera.id) is None
+    assert module.supervisor.problem_kind_of(camera.id) is None
     await module.supervisor.stop_all()
+
+
+async def test_a_backend_with_capture_off_never_opens_a_camera(
+    sessions, cipher, clock, establishment
+):
+    source = ScriptedSource()
+    module = CamerasModule(
+        sessions,
+        source,
+        cipher,
+        InMemoryEventBus(),
+        clock,
+        DisabledPathAdvisor(),
+        ImouCloudResolver("", "", "https://imou.invalid/openapi"),
+        capture_enabled=False,
+    )
+
+    camera = await module.register.execute(establishment.id, "Barra", URL)
+    await module.supervisor.start_all()
+    await module.supervisor.reconcile()
+    await asyncio.sleep(0.01)
+
+    assert source.urls == []
+    assert module.supervisor.status_of(camera.id) is CameraStatus.STOPPED

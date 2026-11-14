@@ -21,8 +21,19 @@ class CameraRepository(Protocol):
     async def list_enabled(self) -> list[Camera]: ...
 
 
+PRIVATE_NETWORK = "private_network"
+
+
 class FrameSourceUnavailableError(Exception):
-    """El equipo no puede leer video. Su mensaje es seguro: nunca incluye la URL."""
+    """El equipo no puede leer video. Su mensaje es seguro: nunca incluye la URL.
+
+    `kind` dice qué tipo de problema es, para que la app ofrezca la salida adecuada; por
+    ejemplo PRIVATE_NETWORK: la cámara está en una red que este servidor no alcanza.
+    """
+
+    def __init__(self, message: str, kind: str | None = None) -> None:
+        super().__init__(message)
+        self.kind = kind
 
 
 class FrameSource(Protocol):
