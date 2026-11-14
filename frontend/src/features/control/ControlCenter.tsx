@@ -1,5 +1,6 @@
 "use client";
 
+import { WantedPhoto } from "@/features/directory/WantedPhoto";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ControlShell } from "@/components/ControlShell";
@@ -326,10 +327,11 @@ export function ControlCenter() {
                 {wanted.map((record) => (
                   <li key={record.slug}>
                     <Link href={`/directorio/${record.slug}`}>
-                      {record.photo_url && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={record.photo_url} alt="" />
-                      )}
+                      <WantedPhoto
+                        src={record.photo_url}
+                        name={record.name}
+                        className={styles.miniFoto}
+                      />
                       <span>
                         <strong>{record.name}</strong>
                         <span className={styles.tenue}>{formatReward(record)}</span>
