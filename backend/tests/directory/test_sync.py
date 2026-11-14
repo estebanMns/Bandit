@@ -3,6 +3,7 @@ from datetime import timedelta
 import pytest
 
 from bandit.directory.application.tools import SOURCE_URL
+from bandit.directory.application.use_cases import ListWanted
 from bandit.directory.domain.models import ExtractedRecord
 from bandit.directory.infrastructure.file_media import FileMediaStore
 from bandit.directory.module import DirectoryModule
@@ -202,3 +203,39 @@ async def test_removing_a_local_test_hides_it_and_its_photo(sessions, clock, med
     with pytest.raises(NotFoundError):
         await module.get.execute("persona-prueba")
     assert media.path_of("persona-prueba.jpg") is None
+
+
+async def test_the_listing_is_cached_and_refreshed_after_each_change(
+    sessions, clock, media, revalidator
+):
+    module = build(sessions, clock, media, revalidator, ["Ana Ejemplo"])
+    await module.sync.execute()
+    first = await module.list_active.execute()
+
+    await module.local_tests.add(
+        "Persona Prueba", None, "Homicidio", "HASTA 10.000 SMLMV", None, b"f", ".jpg"
+    )
+
+    after = await module.list_active.execute()
+    assert [r.name for r in first] == ["Ana Ejemplo"]
+    assert after[0].name == "Persona Prueba"
+
+
+async def test_the_cached_listing_expires():
+    class Records:
+        def __init__(self):
+            self.calls = 0
+
+        async def list_active(self):
+            self.calls += 1
+            return []
+
+    now = [0.0]
+    records = Records()
+    listing = ListWanted(records, max_age_seconds=60, clock=lambda: now[0])
+    await listing.execute()
+    await listing.execute()
+    now[0] = 61
+    await listing.execute()
+
+    assert records.calls == 2
