@@ -20,14 +20,11 @@
   cursor: pointer;
 }
 
-.boton:disabled {
-  cursor: progress;
-  opacity: 0.7;
-}
-
-.mensaje {
-  max-width: 32rem;
-  color: var(--hielo-tenue);
-  font-size: var(--t-sm);
-  text-align: center;
+.panel {
+  width: min(100%, 34rem);
+  max-height: 100%;
+  overflow: auto;
+  padding: 12px 16px;
+  border-radius: var(--radio-panel);
+  background: var(--superficie-solida);
 }
