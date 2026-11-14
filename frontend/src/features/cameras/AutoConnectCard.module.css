@@ -96,3 +96,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.guia > form {
+  margin-top: var(--e-3);
+}
