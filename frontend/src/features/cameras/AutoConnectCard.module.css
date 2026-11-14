@@ -24,6 +24,11 @@
   font-size: var(--t-sm);
 }
 
+.ayuda {
+  color: var(--texto-tenue);
+  font-size: var(--t-sm);
+}
+
 .error {
   color: var(--error);
   font-size: var(--t-sm);
