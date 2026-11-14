@@ -1,5 +1,6 @@
 "use client";
 
+import { WantedPhoto } from "@/features/directory/WantedPhoto";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -25,7 +26,8 @@ export function DirectoryPanel() {
   const [message, setMessage] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    const [nextRecords, nextStatus] = await Promise.all([listWanted(), getSyncStatus()]);
+    // Aquí se sigue la sincronización: siempre el listado recién leído.
+    const [nextRecords, nextStatus] = await Promise.all([listWanted(true), getSyncStatus()]);
     setRecords(nextRecords);
     setStatus(nextStatus);
   }, []);
@@ -91,12 +93,12 @@ export function DirectoryPanel() {
             {records.slice(0, PREVIEW).map((record) => (
               <li key={record.slug}>
                 <Link href={`/directorio/${record.slug}`}>
-                  {record.photo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={record.photo_url} alt="" loading="lazy" />
-                  ) : (
-                    <span className={styles.sinFoto}>Sin foto</span>
-                  )}
+                  <WantedPhoto
+                    src={record.photo_url}
+                    name={record.name}
+                    className={styles.sinFoto}
+                    lazy
+                  />
                   <strong>{record.name}</strong>
                   <span className={styles.detalle}>{formatReward(record)}</span>
                   {record.crime && <span className={styles.detalle}>{record.crime}</span>}
