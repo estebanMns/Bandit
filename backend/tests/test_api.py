@@ -229,6 +229,45 @@ def test_ws_ticket_opens_sockets_from_an_allowed_origin(client: TestClient) -> N
         assert socket.receive_json() == {"type": "sync"}
 
 
+def test_ws_ticket_from_another_origin_works_without_listing_it(client: TestClient) -> None:
+    headers = login(client)
+    local = create_local(client, headers)
+    ticket = client.get("/api/auth/ws-ticket").json()["ticket"]
+    client.cookies.clear()
+
+    with client.websocket_connect(
+        f"/ws/events/{local}?ticket={ticket}", headers={"Origin": "https://otro-dominio.vercel.app"}
+    ) as socket:
+        assert socket.receive_json() == {"type": "sync"}
+
+
+def test_ws_ticket_says_where_to_open_the_socket(client: TestClient) -> None:
+    login(client)
+
+    behind_proxy = client.get(
+        "/api/auth/ws-ticket",
+        headers={"Host": "api.ejemplo.com", "X-Forwarded-Proto": "https"},
+    ).json()
+    client.app.state.public_backend_url = "https://bandit-api.onrender.com"  # type: ignore[attr-defined]
+    configured = client.get("/api/auth/ws-ticket").json()
+
+    assert behind_proxy["ws_url"] == "wss://api.ejemplo.com"
+    assert configured["ws_url"] == "wss://bandit-api.onrender.com"
+
+
+def test_a_cookie_socket_from_an_unlisted_origin_is_still_rejected(client: TestClient) -> None:
+    headers = login(client)
+    local = create_local(client, headers)
+
+    with (
+        pytest.raises(WebSocketDisconnect),
+        client.websocket_connect(
+            f"/ws/events/{local}", headers={"Origin": "https://otro-dominio.vercel.app"}
+        ),
+    ):
+        pass
+
+
 def test_ws_ticket_requires_a_session(client: TestClient) -> None:
     assert client.get("/api/auth/ws-ticket").status_code == 401
 
