@@ -24,6 +24,13 @@ class FileMediaStore:
     async def delete(self, name: str) -> None:
         await asyncio.to_thread(self._safe_path(name).unlink, missing_ok=True)
 
+    def _read(self, name: str) -> bytes | None:
+        path = self.path_of(name)
+        return Path(path).read_bytes() if path else None
+
+    async def load(self, name: str) -> bytes | None:
+        return await asyncio.to_thread(self._read, name)
+
     def path_of(self, name: str) -> str | None:
         try:
             path = self._safe_path(name)
