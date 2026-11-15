@@ -24,8 +24,8 @@ from bandit.directory.infrastructure.repositories import (
 from bandit.shared.clock import Clock
 from bandit.shared.db import SessionFactory
 
-# Una extracción manual cada media hora como máximo: cuida a la página de la Policía.
-MANUAL_SYNC_GAP = timedelta(minutes=30)
+# Una extracción manual cada cinco minutos como máximo: cuida a la página de la Policía.
+MANUAL_SYNC_GAP = timedelta(minutes=5)
 
 
 class _ListingRevalidator:

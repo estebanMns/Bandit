@@ -3,7 +3,6 @@
 import logging
 import time
 from collections.abc import Callable
-from dataclasses import replace
 from pathlib import PurePosixPath
 from urllib.parse import unquote, urlsplit
 from uuid import uuid4
@@ -34,6 +33,9 @@ logger = logging.getLogger(__name__)
 _MAX_PHOTO_BYTES = 5 * 1024 * 1024
 _MAX_FLYER_BYTES = 10 * 1024 * 1024
 _ALLOWED_PHOTO_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
+# Si una corrida completa trae menos de esta fracción de los registros actuales, lo más probable
+# es que la página de la Policía cambió de diseño: no se elimina a nadie.
+_MIN_KEPT_FRACTION = 0.5
 
 
 class ListWanted:
@@ -99,31 +101,53 @@ class SyncDirectory:
         self._smlmv_cop = smlmv_cop
 
     async def execute(self) -> SyncReport:
-        tools = ScrapingTools(self._fetcher, self._read_pdf_text)
+        current = {record.slug: record for record in await self._records.list_active()}
+        tools = ScrapingTools(self._fetcher, self._read_pdf_text, await self._known_flyers(current))
         await self._agent.run(tools)
         complete = tools.finished and tools.failed_pages == 0
         if not tools.accepted:
             logger.warning("La extracción no aceptó registros; el directorio queda como estaba")
             return SyncReport(0, tools.rejected, 0, False, tools.failed_pages, tools.last_error)
 
-        current = {record.slug: record for record in await self._records.list_active()}
         published: set[str] = set()
         for extracted in tools.accepted.values():
             record = await self._publish(extracted, current)
             published.add(record.slug)
 
-        # Lo aceptado se publica siempre; solo una corrida completa retira a quien ya no está.
+        # Lo aceptado se publica siempre; solo una corrida completa elimina a quien ya no está.
         retired = 0
+        error = tools.last_error
         if complete:
-            for slug, record in current.items():
-                if slug not in published and not record.local_test:
+            gone = [
+                record
+                for slug, record in current.items()
+                if slug not in published and not record.local_test
+            ]
+            police = sum(1 for record in current.values() if not record.local_test)
+            if gone and len(published) < police * _MIN_KEPT_FRACTION:
+                error = (
+                    f"La página trajo {len(published)} de {police} registros: "
+                    "no se eliminó a nadie por si cambió el diseño"
+                )
+                logger.warning(error)
+            else:
+                for record in gone:
                     await self._retire(record)
                     retired += 1
 
         await self._revalidator.revalidate()
         return SyncReport(
-            len(published), tools.rejected, retired, complete, tools.failed_pages, tools.last_error
+            len(published), tools.rejected, retired, complete, tools.failed_pages, error
         )
+
+    async def _known_flyers(self, current: dict[str, WantedRecord]) -> frozenset[str]:
+        """URLs de los volantes ya guardados: no hace falta volver a leerlos."""
+        sources = [
+            await self._media.source_of(record.flyer_file)
+            for record in current.values()
+            if record.flyer_file
+        ]
+        return frozenset(source for source in sources if source)
 
     async def _publish(
         self, extracted: ExtractedRecord, current: dict[str, WantedRecord]
@@ -136,9 +160,10 @@ class SyncDirectory:
             slug=slug,
             name=extracted.name,
             alias=extracted.alias,
-            crime=extracted.crime,
+            # El volante solo se lee la primera vez: si ahora no se leyó, se conserva lo sabido.
+            crime=extracted.crime or (existing.crime if existing else None),
             reward=extracted.reward,
-            region=extracted.region,
+            region=extracted.region or (existing.region if existing else None),
             hotline_email=extracted.hotline_email,
             hotline_phones=list(extracted.hotline_phones),
             photo_file=existing.photo_file if existing else None,
@@ -168,17 +193,21 @@ class SyncDirectory:
             return fallback
         name = f"{slug}{suffix}" if photo else f"{slug}-volante.pdf"
         try:
-            await self._media.save(name, await self._fetcher.fetch_bytes(url, limit))
+            # Cada pocos minutos se revisa la página: solo se baja lo nuevo o lo que cambió.
+            if name == fallback and await self._media.source_of(name) == url:
+                return name
+            await self._media.save(name, await self._fetcher.fetch_bytes(url, limit), url)
         except Exception as error:
             logger.warning("No se pudo descargar un archivo: %s", type(error).__name__)
             return fallback
         return name
 
     async def _retire(self, record: WantedRecord) -> None:
+        """Ya no está en el listado de la Policía: se elimina con su foto y su volante."""
         for name in (record.photo_file, record.flyer_file):
             if name:
                 await self._media.delete(name)
-        await self._records.upsert(replace(record, active=False, photo_file=None, flyer_file=None))
+        await self._records.delete(record.slug)
 
 
 class LocalTestRecords:
@@ -248,6 +277,6 @@ class LocalTestRecords:
             return False
         if record.photo_file:
             await self._media.delete(record.photo_file)
-        await self._records.upsert(replace(record, active=False, photo_file=None))
+        await self._records.delete(record.slug)
         await self._revalidator.revalidate()
         return True

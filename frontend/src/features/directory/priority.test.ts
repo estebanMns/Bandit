@@ -27,8 +27,9 @@ describe("prioridad del directorio", () => {
     expect(formatReward({ reward_amount: null })).toBe("Sin recompensa publicada");
   });
 
-  it("respeta el orden del servidor y toma solo el comienzo", () => {
-    const records = Array.from({ length: 9 }, (_, index) => record(`r${index}`));
+  it("el Top 10 respeta el orden del servidor y toma solo los diez primeros", () => {
+    expect(PRIORITY_SIZE).toBe(10);
+    const records = Array.from({ length: 14 }, (_, index) => record(`r${index}`));
 
     expect(priorityRecords(records).map((item) => item.slug)).toEqual(
       records.slice(0, PRIORITY_SIZE).map((item) => item.slug),

@@ -24,9 +24,16 @@ def _meaningful(value: str | None) -> str | None:
 
 
 class ScrapingTools:
-    def __init__(self, fetcher: PageFetcher, read_pdf_text: Callable[[bytes], str]) -> None:
+    def __init__(
+        self,
+        fetcher: PageFetcher,
+        read_pdf_text: Callable[[bytes], str],
+        known_flyers: frozenset[str] = frozenset(),
+    ) -> None:
         self._fetcher = fetcher
         self._read_pdf_text = read_pdf_text
+        # Volantes que ya están guardados: no hace falta volver a leerlos.
+        self.known_flyers = known_flyers
         self._evidence: list[str] = []
         self._known_urls: set[str] = set()
         self._flyer_texts: dict[str, str] = {}
@@ -44,6 +51,16 @@ class ScrapingTools:
         self._evidence.append(normalize_text(digest.text))
         self._known_urls |= digest.urls
         return digest.text
+
+    async def open_listing_html(self, page: int) -> str:
+        """El HTML crudo de una página del listado; su texto queda como respaldo de los datos."""
+        if not 0 <= page < MAX_LISTING_PAGES:
+            raise ValueError("Esa página está fuera del rango permitido")
+        html = await self._fetcher.fetch_text(f"{SOURCE_URL}?page={page}")
+        digest = digest_html(html, SOURCE_URL)
+        self._evidence.append(normalize_text(digest.text))
+        self._known_urls |= digest.urls
+        return html
 
     async def read_flyer(self, url: str) -> str:
         if url not in self._known_urls or not urlsplit(url).path.lower().endswith(".pdf"):
@@ -100,6 +117,9 @@ class ScrapingTools:
         self.failed_pages += 1
         self.last_error = detail[:300]
         logger.warning("Falló la extracción de una página: %s", self.last_error)
+
+    def accepted_count(self) -> int:
+        return len(self.accepted)
 
     def finish(self) -> str:
         self.finished = True

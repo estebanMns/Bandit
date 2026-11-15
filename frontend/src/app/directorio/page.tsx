@@ -20,7 +20,8 @@ export default async function DirectoryPage() {
     <main className={styles.pagina}>
       <h1 className={styles.titulo}>Los más buscados</h1>
       <p className={styles.aviso}>
-        Copia informativa del <a href={SOURCE}>listado público de la Policía Nacional</a>. Toda
+        Copia informativa del <a href={SOURCE}>listado público de la Policía Nacional</a>, que
+        Bandit revisa cada 10 minutos. Toda
         persona se presume inocente mientras no se demuestre lo contrario. Si crees reconocer a
         alguien, no intervengas: usa la línea oficial de la ficha o llama al 123.
       </p>

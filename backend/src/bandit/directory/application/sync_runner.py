@@ -14,6 +14,9 @@ from bandit.shared.errors import ConflictError, RateLimitedError
 
 logger = logging.getLogger(__name__)
 
+# Holgura para el job periódico: si la última corrida empezó hace casi un intervalo, ya toca.
+_SCHEDULE_SLACK = timedelta(minutes=1)
+
 
 class DirectorySyncRunner:
     def __init__(
@@ -79,8 +82,12 @@ class DirectorySyncRunner:
             raise RateLimitedError(f"Espera {minutes} minutos entre extracciones")
         self._spawn(SyncTrigger.MANUAL)
 
-    async def start_if_stale(self) -> bool:
-        """Al arrancar: extrae si nunca se hizo, si es vieja o si el directorio está vacío."""
+    async def start_if_stale(self, trigger: SyncTrigger = SyncTrigger.STARTUP) -> bool:
+        """Extrae si nunca se hizo, si es vieja o si el directorio está vacío.
+
+        Lo usan el arranque y el job periódico. Como varios backends comparten la base, el que
+        llega justo después de que otro extrajo no repite la extracción.
+        """
         latest = await self._runs.latest(1)
         now = self._clock.now()
         if not latest:
@@ -88,9 +95,11 @@ class DirectorySyncRunner:
         else:
             age = now - latest[0].started_at
             empty = not await self._records.execute()
-            stale = age >= self._stale_after or (empty and age >= self._manual_gap)
+            stale = age >= self._stale_after - _SCHEDULE_SLACK or (
+                empty and age >= self._manual_gap
+            )
         if stale and not self._busy:
-            self._spawn(SyncTrigger.STARTUP)
+            self._spawn(trigger)
         return stale
 
     def _spawn(self, trigger: SyncTrigger) -> None:

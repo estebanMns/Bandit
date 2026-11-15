@@ -16,17 +16,17 @@ export function DirectoryBrowser({ records }: { records: WantedRecord[] }) {
   const crimes = useMemo(() => uniqueValues(records.map((record) => record.crime)), [records]);
   const regions = useMemo(() => uniqueValues(records.map((record) => record.region)), [records]);
   const visible = filterDirectory(records, { search, crime, region });
-  const filtering = Boolean(search || crime || region);
   const priority = priorityRecords(records);
 
   return (
     <>
-      {!filtering && priority.length > 0 && (
+      {priority.length > 0 && (
         <section className={styles.prioridad} aria-labelledby="titulo-prioridad">
-          <h2 id="titulo-prioridad">Prioridad</h2>
+          <h2 id="titulo-prioridad">Top 10 · mayor recompensa</h2>
           <p className={styles.tenue}>
-            Ordenado por la recompensa que ofrece la Policía y, después, por la gravedad del delito
-            publicado. Bandit no califica a las personas: solo ordena lo que la Policía publicó.
+            Las diez recompensas más altas que ofrece la Policía; con igual recompensa, primero el
+            delito más grave publicado. Bandit no califica a las personas: solo ordena lo que la
+            Policía publicó.
           </p>
           <ol className={styles.prioritarios}>
             {priority.map((record, index) => (

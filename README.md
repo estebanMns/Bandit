@@ -91,7 +91,7 @@ dirección** (Render la publica sola en `RENDER_EXTERNAL_URL`). No hace falta co
 | `WS_ALLOWED_ORIGINS` | Opcional. Con el ticket no hace falta: solo el propio frontend puede obtenerlo. Sirve para conexiones con cookie desde otro dominio; acepta un comodín para las vistas previas (`https://*-<tu-equipo>.vercel.app`). |
 | `CAMERA_ENCRYPTION_KEY` | La misma con la que se guardaron las cámaras. |
 | `IMOU_APP_ID`, `IMOU_APP_SECRET`, `IMOU_API_URL` | Video de las cámaras Imou por su nube (ver abajo). |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET` | Evidencia y fotos del directorio en Supabase Storage. Sin esto se guardan en el disco de Render, que se borra en cada despliegue, y las imágenes salen en negro. Crea antes un bucket **privado** (`bandit`). |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET` | Evidencia de los eventos en Supabase Storage. Sin esto se guarda en el disco de Render, que se borra en cada despliegue, y las imágenes salen en negro. Crea antes un bucket **privado** (`bandit`). Las fotos del directorio no lo necesitan: viven en la base de datos. |
 | `GEMINI_FALLBACK_MODELS` | Respaldos si un modelo de Gemini se queda sin cuota. |
 
 **Cámaras en una red privada.** Un backend en internet no alcanza una cámara con IP privada
@@ -113,8 +113,15 @@ una vez (no borra nada del disco):
 docker compose exec backend python -m bandit.tools.upload_media
 ```
 
-Las fotos del directorio también se vuelven a descargar en la siguiente sincronización de Render
-(Analítica → Directorio → Actualizar ahora). Mientras falte una foto, se muestran las iniciales.
+Las fotos y volantes del directorio se guardan en la base de datos (tabla `directory_files`). Las
+que quedaron en el disco de un PC se copian una vez a la base con:
+
+```bash
+docker compose exec backend python -m bandit.tools.upload_media --db
+```
+
+Si no, se vuelven a descargar en la siguiente extracción. Mientras falte una foto, se muestran las
+iniciales.
 
 **Plan gratuito de Render.** Tiene muy poca CPU y se duerme tras unos minutos sin visitas: la
 primera visita después tarda unos 50 segundos y la captura de cámaras se detiene mientras duerme.
@@ -153,8 +160,8 @@ versión de Docker: compila cada página la primera vez y no reenvía los evento
 | Administrador | `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD` en `.env`, opcional | Ve todos los locales y sincroniza el directorio |
 | Administrador de prueba | `DEMO_ADMIN=true` en `.env`: usuario `admin`, clave `admin` | Igual que un administrador. Con `false` la cuenta se borra al arrancar |
 
-La extracción del directorio corre sola al arrancar y cada día. Un dueño o un administrador puede
-pedir una manual desde **Actividad IA**, como máximo cada 30 minutos. El registro no verifica el correo y está limitado a 5 cuentas por hora por conexión.
+La extracción del directorio corre sola al arrancar y cada 10 minutos. Un dueño o un administrador
+puede pedir una manual desde **Actividad IA**, como máximo cada 5 minutos. El registro no verifica el correo y está limitado a 5 cuentas por hora por conexión.
 
 ### Funciones que requieren credenciales
 
@@ -261,15 +268,31 @@ conocidas de cada marca con la clave que escribes y, si ninguna funciona, le pid
 para probar. Gemini solo recibe la marca, los puertos y las cabeceras, nunca la clave. La URL se arma
 en tu navegador y se guarda cifrada.
 
-### Directorio por prioridad
+### Boletín: Top 10 y directorio por prioridad
+
+Bandit lee el listado de https://www.policia.gov.co/los-mas-buscados-colombia **cada 10 minutos**,
+directamente del HTML de la página y sin IA: no gasta cuota de Gemini. Respeta `robots.txt` y hace
+una petición cada dos segundos. Del volante en PDF toma la unidad de policía y el delito, pero solo
+la primera vez que aparece; las fotos y volantes ya guardados no se vuelven a descargar.
+
+- Los registros, las fotos y los volantes quedan en la base de datos de Supabase, así sobreviven a
+  los despliegues y los ven todos los backends.
+- Quien deja de aparecer en la página se **elimina** de la base con su foto y su volante. Solo
+  pasa cuando se leyeron todas las páginas sin errores y si la página no perdió de golpe más de la
+  mitad de los registros (eso indicaría que cambió de diseño).
+- El PC y Render comparten la base: si uno acaba de extraer, el otro no repite.
+- Si la página cambia y el lector no encuentra a nadie, se usa Gemini como respaldo, como mucho una
+  vez al día.
+
+El **Boletín** muestra arriba el **Top 10** de recompensas, y el Monitor los mismos diez.
 
 El directorio muestra primero a quien tiene la recompensa más alta publicada por la Policía, luego
 según la gravedad del delito publicado (una lista fija y visible: homicidio; secuestro, extorsión o
 terrorismo; delito sexual; tráfico, armas o concierto para delinquir; hurto u otros) y luego en el
 orden de la página de la Policía. Bandit no califica a las personas.
 
-Si `GEMINI_MODEL` se queda sin cuota (error `429 RESOURCE_EXHAUSTED`), define
-`GEMINI_DIRECTORY_MODEL`, por ejemplo `gemini-3.5-flash`, para extraer el directorio con otro modelo.
+Para el respaldo con IA, si `GEMINI_MODEL` se queda sin cuota (error `429 RESOURCE_EXHAUSTED`),
+define `GEMINI_DIRECTORY_MODEL`, por ejemplo `gemini-3.5-flash`.
 El panel **Actividad IA** muestra el error exacto de cada extracción.
 
 ### Probar alertas con fotos
@@ -294,8 +317,8 @@ identifica personas.
 movimiento, su última respuesta (situación, confianza, severidad y descripción) y cuántas
 detecciones seguidas lleva antes de alertar. También muestra las consultas del día frente al tope
 y la galería de los más buscados con el estado de la última extracción. El fotograma analizado solo
-vive en memoria. La extracción corre sola al arrancar si el directorio está vacío o es viejo, y un
-dueño puede pedir una manual cada 30 minutos.
+vive en memoria. La extracción corre sola al arrancar y cada 10 minutos, y un dueño puede pedir una
+manual cada 5 minutos.
 
 ## Arquitectura
 

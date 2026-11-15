@@ -39,6 +39,7 @@ def client(tmp_path: Path) -> Iterator[TestClient]:
         bootstrap_admin_password=PASSWORD,
         ffmpeg_path="ffmpeg-inexistente",
         media_root=str(tmp_path),
+        directory_scrape_enabled=False,
     )
     app = create_app(settings)
     asyncio.run(_create_schema(url))
@@ -78,6 +79,7 @@ def test_login_accepts_internal_domains(tmp_path: Path) -> None:
             bootstrap_admin_email="admin@bandit.local",
             bootstrap_admin_password=PASSWORD,
             media_root=str(tmp_path),
+            directory_scrape_enabled=False,
         )
     )
     asyncio.run(_create_schema(url))
@@ -511,6 +513,7 @@ def demo_client(tmp_path: Path, demo: bool) -> TestClient:
         camera_encryption_key=Fernet.generate_key().decode(),
         ffmpeg_path="ffmpeg-inexistente",
         media_root=str(tmp_path),
+        directory_scrape_enabled=False,
         demo_admin=demo,
     )
     if not (tmp_path / "demo.db").exists():

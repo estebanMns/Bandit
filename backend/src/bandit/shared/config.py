@@ -59,7 +59,11 @@ class Settings(BaseSettings):
     vapid_private_key: str = ""
     vapid_subject: str = "mailto:admin@example.com"
 
-    directory_scrape_interval_hours: int = Field(default=24, ge=1)
+    # Cada cuánto se revisa el listado de la Policía. Leerlo sin IA cuesta poco y solo se bajan
+    # las fotos nuevas; menos de 5 minutos sería abusar de la página.
+    directory_scrape_interval_minutes: int = Field(default=10, ge=5)
+    # Apagarlo solo en pruebas: sin esto, el directorio queda como esté en la base.
+    directory_scrape_enabled: bool = True
     # Salario mínimo legal mensual en pesos, para recompensas publicadas en SMLMV.
     smlmv_cop: int = Field(default=1_423_500, ge=1)
     revalidate_secret: str = ""
