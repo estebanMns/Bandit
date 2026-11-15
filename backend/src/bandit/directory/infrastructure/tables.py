@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import JSON, BigInteger, String
+from sqlalchemy import JSON, BigInteger, LargeBinary, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from bandit.shared.db import Base, UtcDateTime
@@ -44,3 +44,16 @@ class SyncRunRow(Base):
     completed: Mapped[bool]
     error: Mapped[str | None] = mapped_column(String(300))
     pages_failed: Mapped[int] = mapped_column(default=0)
+
+
+class DirectoryFileRow(Base):
+    """Fotos y volantes del directorio, guardados en la misma base: sobreviven a los despliegues."""
+
+    __tablename__ = "directory_files"
+
+    name: Mapped[str] = mapped_column(String(320), primary_key=True)
+    content: Mapped[bytes] = mapped_column(LargeBinary)
+    content_type: Mapped[str] = mapped_column(String(100))
+    # De dónde se descargó: si no cambia, no se vuelve a descargar.
+    source_url: Mapped[str | None] = mapped_column(String(1000))
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime)
