@@ -1,6 +1,6 @@
 """Repositorio SQL del directorio."""
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from bandit.directory.domain.models import SyncRun, SyncTrigger, WantedRecord
 from bandit.directory.infrastructure.tables import SyncRunRow, WantedRow
@@ -56,6 +56,10 @@ class SqlWantedRepository:
                 session.add(row)
             for name in _COPIED_FIELDS:
                 setattr(row, name, getattr(record, name))
+
+    async def delete(self, slug: str) -> None:
+        async with self._sessions.begin() as session:
+            await session.execute(delete(WantedRow).where(WantedRow.slug == slug))
 
 
 _RUN_FIELDS = (
