@@ -26,7 +26,10 @@ class SupabaseMediaStore:
     def __init__(self, storage: SupabaseStorage) -> None:
         self._storage = storage
 
-    async def save(self, name: str, data: bytes) -> None:
+    async def source_of(self, name: str) -> str | None:
+        return None
+
+    async def save(self, name: str, data: bytes, source: str | None = None) -> None:
         content_type = _TYPES.get(name[name.rfind(".") :].lower(), "application/octet-stream")
         await self._storage.upload(_path(name), data, content_type)
 
