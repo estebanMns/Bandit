@@ -27,16 +27,19 @@ from bandit.cameras.infrastructure.gemini_path_advisor import (
 from bandit.cameras.infrastructure.imou_cloud import ImouCloudResolver
 from bandit.cameras.infrastructure.resolving_source import ResolvingFrameSource
 from bandit.cameras.module import CamerasModule
-from bandit.directory.domain.ports import DirectoryAgent, MediaStore
+from bandit.directory.application.police_listing import (
+    FallbackDirectoryAgent,
+    HtmlDirectoryAgent,
+)
+from bandit.directory.domain.ports import DirectoryAgent
 from bandit.directory.infrastructure import tables as directory_tables  # noqa: F401
-from bandit.directory.infrastructure.file_media import FileMediaStore
+from bandit.directory.infrastructure.db_media import DbMediaStore
 from bandit.directory.infrastructure.gemini_agent import (
     DisabledDirectoryAgent,
     GeminiDirectoryAgent,
 )
 from bandit.directory.infrastructure.next_revalidator import NextRevalidator
 from bandit.directory.infrastructure.polite_fetcher import PoliteFetcher
-from bandit.directory.infrastructure.supabase_media import SupabaseMediaStore
 from bandit.directory.module import DirectoryModule
 from bandit.establishments.infrastructure import tables as establishment_tables  # noqa: F401
 from bandit.establishments.infrastructure.nominatim import NominatimGeocoder
@@ -126,9 +129,15 @@ def _path_advisor(settings: Settings) -> PathAdvisor:
 
 
 def _directory_agent(settings: Settings) -> DirectoryAgent:
-    if not settings.gemini_api_key:
+    """Lee la página directamente; la IA solo entra si la página cambió y no encontró a nadie."""
+    if not settings.directory_scrape_enabled:
         return DisabledDirectoryAgent()
-    return GeminiDirectoryAgent(settings.gemini_api_key, _text_model(settings))
+    backup: DirectoryAgent = (
+        GeminiDirectoryAgent(settings.gemini_api_key, _text_model(settings))
+        if settings.gemini_api_key
+        else DisabledDirectoryAgent()
+    )
+    return FallbackDirectoryAgent(HtmlDirectoryAgent(), backup)
 
 
 def _shared_storage(settings: Settings) -> SupabaseStorage | None:
@@ -144,13 +153,6 @@ def _evidence_store(settings: Settings) -> EvidenceStore:
     if storage is not None:
         return SupabaseEvidenceStore(storage)
     return FileEvidenceStore(str(Path(settings.media_root) / "evidence"))
-
-
-def _media_store(settings: Settings) -> MediaStore:
-    storage = _shared_storage(settings)
-    if storage is not None:
-        return SupabaseMediaStore(storage)
-    return FileMediaStore(str(Path(settings.media_root) / "directory"))
 
 
 def _faces_module(
@@ -305,10 +307,11 @@ def build_application(settings: Settings) -> Application:
         sessions,
         _directory_agent(settings),
         PoliteFetcher(),
-        _media_store(settings),
+        # Las fotos y volantes viven en la base (Supabase): sobreviven a los despliegues.
+        DbMediaStore(sessions),
         NextRevalidator(settings.frontend_internal_url, settings.revalidate_secret),
         clock,
-        timedelta(hours=settings.directory_scrape_interval_hours),
+        timedelta(minutes=settings.directory_scrape_interval_minutes),
         settings.smlmv_cop,
     )
     faces = _faces_module(settings, cameras, directory, bus, clock)
