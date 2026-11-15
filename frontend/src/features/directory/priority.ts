@@ -1,7 +1,7 @@
 import type { WantedRecord } from "./types";
 
-/** Cuántas fichas destaca la sección de prioridad. */
-export const PRIORITY_SIZE = 6;
+/** El Top 10 del boletín: las recompensas más altas publicadas por la Policía. */
+export const PRIORITY_SIZE = 10;
 
 const PESOS = new Intl.NumberFormat("es-CO", {
   style: "currency",
