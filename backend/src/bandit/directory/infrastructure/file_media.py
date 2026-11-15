@@ -18,8 +18,11 @@ class FileMediaStore:
         self._root.mkdir(parents=True, exist_ok=True)
         self._safe_path(name).write_bytes(data)
 
-    async def save(self, name: str, data: bytes) -> None:
+    async def save(self, name: str, data: bytes, source: str | None = None) -> None:
         await asyncio.to_thread(self._write, name, data)
+
+    async def source_of(self, name: str) -> str | None:
+        return None
 
     async def delete(self, name: str) -> None:
         await asyncio.to_thread(self._safe_path(name).unlink, missing_ok=True)
