@@ -40,7 +40,7 @@ export function ControlCenter() {
 
   useEffect(() => {
     listWanted()
-      .then((records) => setWanted(priorityRecords(records).slice(0, 4)))
+      .then((records) => setWanted(priorityRecords(records)))
       .catch(() => setWanted([]));
   }, []);
 
@@ -315,7 +315,7 @@ export function ControlCenter() {
 
           <section className={`vidrio ${styles.panel}`} aria-labelledby="titulo-boletin">
             <div className={styles.panelCabecera}>
-              <h2 id="titulo-boletin">Más buscados · prioridad</h2>
+              <h2 id="titulo-boletin">Top 10 · mayor recompensa</h2>
               <Link href="/directorio" className={styles.enlace}>
                 Boletín
               </Link>
