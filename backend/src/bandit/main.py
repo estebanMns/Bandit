@@ -38,11 +38,14 @@ def _build_scheduler(application: Application, settings: Settings) -> AsyncIOSch
         max_instances=1,
         coalesce=True,
     )
+    # Varios backends comparten la base: el que llega cuando otro acaba de extraer no repite.
     scheduler.add_job(
-        application.directory.runner.run,
+        application.directory.runner.start_if_stale,
         "interval",
         args=[SyncTrigger.SCHEDULED],
-        hours=settings.directory_scrape_interval_hours,
+        minutes=settings.directory_scrape_interval_minutes,
+        max_instances=1,
+        coalesce=True,
     )
     return scheduler
 
