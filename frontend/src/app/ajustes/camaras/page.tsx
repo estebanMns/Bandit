@@ -12,6 +12,7 @@ import {
   type Camera,
 } from "@/features/cameras/api";
 import { CameraFinder } from "@/features/cameras/CameraFinder";
+import { ImouConnectForm } from "@/features/cameras/ImouConnectForm";
 import { useEstablishment } from "@/features/establishments/useEstablishment";
 import { ApiError } from "@/lib/api";
 import styles from "../ajustes.module.css";
@@ -58,6 +59,16 @@ export default function CamerasPage() {
 
         {current && (
           <section className={`vidrio ${styles.seccion}`}>
+            <h2>Conectar cámara Imou</h2>
+            <ImouConnectForm
+              establishmentId={current.id}
+              onConnected={() => void listCameras(current.id).then(setCameras)}
+            />
+          </section>
+        )}
+
+        {current && (
+          <section className={`vidrio ${styles.seccion}`}>
             <h2>Buscar cámaras en tu red</h2>
             <p className={styles.ayuda}>
               Bandit revisa los equipos de tu Wi-Fi, prueba las rutas de video conocidas de cada
@@ -81,7 +92,7 @@ export default function CamerasPage() {
                 name="url"
                 type="password"
                 autoComplete="off"
-                hint="rtsp:// en la red local, o imou://<número de serie>/<canal>?stream=1 para una cámara Imou por su nube. Se guarda cifrada y no se vuelve a mostrar."
+                hint="rtsp:// en la red local. Las cámaras Imou se conectan arriba, con su número de serie y su clave. Se guarda cifrada y no se vuelve a mostrar."
                 required
                 error={error}
               />

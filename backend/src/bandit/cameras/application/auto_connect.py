@@ -11,7 +11,7 @@ from uuid import UUID
 from bandit.cameras.application.discovery import ConnectDevice, ScanNetwork
 from bandit.cameras.application.use_cases import ListCameras, RegisterCamera
 from bandit.cameras.domain.discovery import ConnectOutcome, DiscoveredDevice
-from bandit.cameras.domain.ports import UrlCipher
+from bandit.cameras.domain.ports import ImouOwners, UrlCipher
 from bandit.shared.error_summary import describe_error
 from bandit.shared.errors import DomainError
 
@@ -21,6 +21,9 @@ _RTSP_PORTS = {554, 8554}
 
 
 class CloudCamera(Protocol):
+    @property
+    def device_id(self) -> str: ...
+
     @property
     def url(self) -> str: ...
 
@@ -41,6 +44,8 @@ class CameraCloud(Protocol):
     def configured(self) -> bool: ...
 
     async def list_cameras(self) -> Sequence[CloudCamera]: ...
+
+    async def bind_device(self, serial: str, code: str) -> None: ...
 
 
 class Method(StrEnum):
@@ -89,6 +94,7 @@ class AutoConnect:
         list_cameras: ListCameras,
         cipher: UrlCipher,
         cloud: CameraCloud,
+        owners: ImouOwners,
     ) -> None:
         self._scan = scan
         self._connect = connect
@@ -96,6 +102,7 @@ class AutoConnect:
         self._list = list_cameras
         self._cipher = cipher
         self._cloud = cloud
+        self._owners = owners
 
     async def execute(
         self, establishment_id: UUID, network: str | None, username: str, password: str
@@ -114,13 +121,7 @@ class AutoConnect:
         return result
 
     async def _known_urls(self, establishment_id: UUID) -> set[str]:
-        urls: set[str] = set()
-        for camera in await self._list.execute(establishment_id):
-            try:
-                urls.add(self._cipher.decrypt(camera.encrypted_url))
-            except Exception as error:
-                logger.warning("No se pudo leer una cámara guardada: %s", describe_error(error))
-        return urls
+        return await known_urls(self._list, self._cipher, establishment_id)
 
     async def _try_lan(
         self,
@@ -239,13 +240,26 @@ class AutoConnect:
                 )
             )
             return
-        online = [camera for camera in cameras if camera.online]
+        # Solo las cámaras de este local: la cuenta de Imou es compartida por todos los clientes.
+        owned = await self._owners.owned_by(establishment_id)
+        mine = [camera for camera in cameras if camera.device_id.upper() in owned]
+        if not mine:
+            result.attempts.append(
+                Attempt(
+                    Method.CLOUD,
+                    AttemptStatus.NEEDS_CREDENTIALS,
+                    "Este local aún no tiene cámaras Imou vinculadas: conéctala con su número "
+                    "de serie y su clave.",
+                )
+            )
+            return
+        online = [camera for camera in mine if camera.online]
         if not online:
             result.attempts.append(
                 Attempt(
                     Method.CLOUD,
                     AttemptStatus.NOTHING_FOUND,
-                    f"La cuenta de Imou tiene {len(cameras)} canales y ninguno está en línea.",
+                    "Las cámaras Imou de este local están sin conexión.",
                 )
             )
             return
@@ -270,6 +284,19 @@ class AutoConnect:
         await self._register.execute(establishment_id, name[:200], url)
         known.add(url)
         result.added.append(name)
+
+
+async def known_urls(
+    list_cameras: ListCameras, cipher: UrlCipher, establishment_id: UUID
+) -> set[str]:
+    """Las URL de las cámaras que el local ya tiene, para no duplicarlas."""
+    urls: set[str] = set()
+    for camera in await list_cameras.execute(establishment_id):
+        try:
+            urls.add(cipher.decrypt(camera.encrypted_url))
+        except Exception as error:
+            logger.warning("No se pudo leer una cámara guardada: %s", describe_error(error))
+    return urls
 
 
 def _rtsp_url(ip: str, port: int, path: str, username: str, password: str) -> str:

@@ -59,6 +59,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         await application.identity.sync_demo_admin.execute(resolved.demo_admin)
         scheduler.start()
+        # Las cámaras Imou guardadas antes de registrar su local siguen siendo de ese local.
+        await application.cameras.adopt_imou.execute()
         await application.cameras.supervisor.start_all()
         await application.directory.runner.start_if_stale()
         try:

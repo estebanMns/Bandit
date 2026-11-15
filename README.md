@@ -96,8 +96,8 @@ dirección** (Render la publica sola en `RENDER_EXTERNAL_URL`). No hace falta co
 
 **Cámaras en una red privada.** Un backend en internet no alcanza una cámara con IP privada
 (`192.168.x.x`, `10.x.x.x`). La vista de la cámara lo explica y, si la nube de Imou está
-configurada, ofrece **"Conectar por la nube de Imou"**: agrega los lentes como `imou://…` y
-desactiva la cámara privada. La otra salida es correr el backend en el local, en la misma red
+configurada, ofrece **"Conectar por la nube de Imou"**: pide el número de serie y la clave de la
+etiqueta, agrega los lentes como `imou://…` y pausa la cámara privada. La otra salida es correr el backend en el local, en la misma red
 que la cámara, y dejar solo el frontend en Vercel. Nunca abras el puerto 554 del router.
 
 **Un solo backend captura.** Si otro backend usa la misma base (por ejemplo Docker en un PC para
@@ -204,18 +204,27 @@ queda en "Falló el aviso" y no sale nada.
 Para probar, usa tu propio celular como "CAI". Acuerda con el CAI el uso de su número antes de
 registrar el real.
 
-### Cámara Imou sin acceso por la red local
+### Cámaras Imou de los clientes (por internet)
 
-Si el servidor de Bandit no alcanza la cámara por la red, Bandit puede pedir el video a la nube de
-Imou. Crea una aplicación en [open.imoulife.com](https://open.imoulife.com) con la misma cuenta de
-Imou Life y copia su **App ID** y **App Secret** en `IMOU_APP_ID` e `IMOU_APP_SECRET`. En
-`IMOU_API_URL` usa el centro de datos de tu cuenta: `openapi-or` para América, `openapi-fk` para
-Europa u `openapi-sg` para Asia.
+**Una sola vez, el operador de Bandit:** crea una aplicación en
+[open.imoulife.com](https://open.imoulife.com) y copia su **App ID** y **App Secret** en
+`IMOU_APP_ID` e `IMOU_APP_SECRET`. En `IMOU_API_URL` usa el centro de datos: `openapi-or` para
+América, `openapi-fk` para Europa u `openapi-sg` para Asia. Todas las cámaras de los clientes
+quedan en la cuenta de esa aplicación.
 
-En **Cámaras** registra `imou://<número de serie>/<canal>?stream=1`. El número de serie está en la
-etiqueta y en Imou Life. Para una cámara de dos lentes, registra una cámara por canal (`0` y `1`).
-`stream=1` es la calidad ligera, suficiente para Gemini; `stream=0` es la alta. El video llega por
-internet con unos segundos de retraso y consume la cuota de tu aplicación en Imou.
+**Cada cliente:**
+1. Configura la cámara con su Wi-Fi usando la app Imou Life.
+2. La borra de Imou Life (Ajustes del dispositivo → Eliminar): Imou no deja vincular a la cuenta
+   de Bandit una cámara que sigue en otra cuenta.
+3. En Bandit, **Ajustes → Cámaras** o **Monitor → Conectar cámara**, escribe el **número de serie
+   (S/N)** y la **clave o código de seguridad** de la etiqueta (o la clave nueva si la cambió).
+
+Bandit vincula la cámara con esa clave y la registra a nombre del local: ningún otro local puede
+verla ni conectarla, y una dirección `imou://` escrita a mano solo se acepta si la cámara ya es del
+local. Tras 5 claves incorrectas en 10 minutos el local debe esperar. Se agrega un lente por canal
+en calidad ligera (`stream=1`); el video llega con unos segundos de retraso y consume la cuota de
+la aplicación en Imou. Las cámaras `imou://` guardadas antes de este registro siguen siendo del
+local que las tenía.
 
 ### Cámara que solo responde a otro equipo
 
