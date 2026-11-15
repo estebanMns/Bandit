@@ -159,7 +159,7 @@ class GeminiDirectoryAgent:
 
 
 class DisabledDirectoryAgent:
-    """Sin clave de API no hay extracción; el directorio queda como estaba."""
+    """Extracción apagada: el directorio queda como está en la base."""
 
     async def run(self, tools: AgentTools) -> None:
-        logger.info("La extracción requiere GEMINI_API_KEY")
+        logger.info("La extracción del directorio está apagada")
