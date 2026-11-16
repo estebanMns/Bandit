@@ -44,3 +44,24 @@ async def test_a_missing_folder_uploads_nothing(tmp_path):
     storage = SupabaseStorage("https://proyecto.supabase.co", "clave", "bandit")
 
     assert await upload_folder(storage, tmp_path, "evidence") == (0, 0)
+
+
+async def test_evidence_of_existing_events_is_copied_and_orphans_are_skipped(tmp_path):
+    from uuid import uuid4
+
+    from bandit.tools.upload_media import copy_evidence
+
+    folder = tmp_path / "evidence"
+    folder.mkdir()
+    known, orphan = uuid4(), uuid4()
+    (folder / f"{known}.jpg").write_bytes(b"foto")
+    (folder / f"{orphan}.jpg").write_bytes(b"huerfana")
+    (folder / "basura.jpg").write_bytes(b"x")
+    saved: dict = {}
+
+    class Sink:
+        async def save(self, incident_id, jpeg):
+            saved[incident_id] = jpeg
+
+    assert await copy_evidence(Sink(), tmp_path, {known}) == (1, 0)
+    assert saved == {known: b"foto"}
