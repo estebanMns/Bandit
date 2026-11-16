@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Request, Response
 
 from bandit.identity.public import CurrentUser, User, require_csrf
-from bandit.incidents.api.schemas import IncidentResponse
+from bandit.incidents.api.schemas import IncidentResponse, IncidentsPageResponse, LocalSummary
 from bandit.incidents.domain.models import Incident
 from bandit.incidents.module import IncidentsModule
 from bandit.shared.errors import NotFoundError, PermissionDeniedError
@@ -43,6 +43,26 @@ async def list_incidents(
     _ensure_access(user, establishment_id)
     incidents = await module.list_recent.execute(establishment_id, limit)
     return [IncidentResponse.of(incident) for incident in incidents]
+
+
+@router.get("/incidents")
+async def incidents_page(
+    user: CurrentUser,
+    module: Module,
+    # Texto y no UUID: un enlace con un local inválido muestra el primero en vez de un error.
+    local: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 100,
+) -> IncidentsPageResponse:
+    """Los eventos del local pedido, o del primero del usuario, en una sola llamada."""
+    mine = [item for item in await module.list_establishments.execute() if user.can_access(item.id)]
+    current = next((item for item in mine if str(item.id) == local), mine[0] if mine else None)
+    if current is None:
+        return IncidentsPageResponse(establishment=None, incidents=[])
+    incidents = await module.list_recent.execute(current.id, limit)
+    return IncidentsPageResponse(
+        establishment=LocalSummary(id=current.id, name=current.name),
+        incidents=[IncidentResponse.of(incident) for incident in incidents],
+    )
 
 
 @router.get("/incidents/{incident_id}")
