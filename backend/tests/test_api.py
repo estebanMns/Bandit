@@ -157,6 +157,10 @@ def test_operator_cannot_reach_another_establishment(client: TestClient) -> None
     assert client.get(f"/api/establishments/{own}").status_code == 200
     assert client.get(f"/api/establishments/{other}").status_code == 403
     assert client.get(f"/api/establishments/{other}/incidents").status_code == 403
+    # La página de eventos nunca muestra un local ajeno: vuelve al propio.
+    page = client.get(f"/api/incidents?local={other}").json()
+    assert page["establishment"]["id"] == own
+    assert client.get("/api/incidents?local=no-es-un-id").json()["establishment"]["id"] == own
     assert [local["id"] for local in client.get("/api/establishments").json()] == [own]
     assert (
         client.put(
