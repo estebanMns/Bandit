@@ -1,6 +1,5 @@
 """Casos de uso de incidentes."""
 
-from datetime import timedelta
 from uuid import UUID, uuid4
 
 from bandit.analysis.public import SituationDetected
@@ -137,13 +136,3 @@ class RecordDelivery:
     async def _finish(self, incident: Incident) -> None:
         await self._incidents.save(incident)
         await self._bus.publish(IncidentChanged(incident=incident))
-
-
-class PurgeEvidence:
-    def __init__(self, evidence: EvidenceStore, clock: Clock, retention: timedelta) -> None:
-        self._evidence = evidence
-        self._clock = clock
-        self._retention = retention
-
-    async def execute(self) -> int:
-        return await self._evidence.purge_older_than(self._clock.now() - self._retention)
