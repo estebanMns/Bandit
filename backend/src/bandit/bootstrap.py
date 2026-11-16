@@ -52,10 +52,8 @@ from bandit.faces.module import FacesModule
 from bandit.identity.infrastructure import tables as identity_tables  # noqa: F401
 from bandit.identity.module import IdentityModule
 from bandit.incidents.domain.models import Incident, IncidentChanged, IncidentConfirmed
-from bandit.incidents.domain.ports import EvidenceStore
 from bandit.incidents.infrastructure import tables as incident_tables  # noqa: F401
-from bandit.incidents.infrastructure.file_evidence import FileEvidenceStore
-from bandit.incidents.infrastructure.supabase_evidence import SupabaseEvidenceStore
+from bandit.incidents.infrastructure.db_evidence import DbEvidenceStore
 from bandit.incidents.module import IncidentsModule
 from bandit.notifications.domain.models import AlertDelivered, AlertFailed
 from bandit.notifications.infrastructure import tables as notification_tables  # noqa: F401
@@ -75,7 +73,6 @@ from bandit.shared.config import Settings
 from bandit.shared.db import create_engine, create_session_factory
 from bandit.shared.events import EventBus, InMemoryEventBus
 from bandit.shared.gemini import model_list
-from bandit.shared.supabase_storage import SupabaseStorage
 
 
 @dataclass(slots=True)
@@ -138,21 +135,6 @@ def _directory_agent(settings: Settings) -> DirectoryAgent:
         else DisabledDirectoryAgent()
     )
     return FallbackDirectoryAgent(HtmlDirectoryAgent(), backup)
-
-
-def _shared_storage(settings: Settings) -> SupabaseStorage | None:
-    if not (settings.supabase_url and settings.supabase_service_role_key):
-        return None
-    return SupabaseStorage(
-        settings.supabase_url, settings.supabase_service_role_key, settings.supabase_storage_bucket
-    )
-
-
-def _evidence_store(settings: Settings) -> EvidenceStore:
-    storage = _shared_storage(settings)
-    if storage is not None:
-        return SupabaseEvidenceStore(storage)
-    return FileEvidenceStore(str(Path(settings.media_root) / "evidence"))
 
 
 def _faces_module(
@@ -283,11 +265,12 @@ def build_application(settings: Settings) -> Application:
     )
     incidents = IncidentsModule(
         sessions,
-        _evidence_store(settings),
+        # La evidencia vive en la base (Supabase) mientras exista el evento.
+        DbEvidenceStore(sessions),
         establishments.get,
         bus,
         clock,
-        timedelta(days=settings.evidence_retention_days),
+        establishments.list_all,
     )
     notifications = NotificationsModule(
         sessions,
