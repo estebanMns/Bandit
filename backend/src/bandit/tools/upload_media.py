@@ -12,12 +12,19 @@ Con ``--db`` copia las fotos y volantes del directorio a la tabla ``directory_fi
 (DATABASE_URL), que es donde ahora los busca Bandit. No necesita Supabase Storage:
 
     python -m bandit.tools.upload_media --db
+
+Con ``--evidence-db`` copia la evidencia de los eventos (``evidence/*.jpg``) a la tabla
+``incident_evidence``. Solo la de eventos que existen en la base:
+
+    python -m bandit.tools.upload_media --evidence-db
 """
 
 import asyncio
 import sys
+from collections.abc import Container
 from pathlib import Path
 from typing import Protocol
+from uuid import UUID
 
 from bandit.shared.supabase_storage import SupabaseStorage
 
@@ -73,6 +80,57 @@ async def copy_directory_files(sink: FileSink, root: Path) -> tuple[int, int]:
     return copied, failed
 
 
+class EvidenceSink(Protocol):
+    async def save(self, incident_id: UUID, jpeg: bytes) -> None: ...
+
+
+async def copy_evidence(
+    sink: EvidenceSink, root: Path, incidents: Container[UUID]
+) -> tuple[int, int]:
+    """Copia ``evidence/<id>.jpg`` a la base. Devuelve (copiados, fallidos); omite huérfanos."""
+    copied = failed = 0
+    source = root / "evidence"
+    if not source.is_dir():
+        return 0, 0
+    for path in sorted(source.glob("*.jpg")):
+        try:
+            incident_id = UUID(path.stem)
+        except ValueError:
+            continue
+        if incident_id not in incidents:
+            continue
+        try:
+            await sink.save(incident_id, path.read_bytes())
+            copied += 1
+        except Exception as error:
+            print(f"  no se pudo copiar {path.name}: {type(error).__name__}")
+            failed += 1
+    return copied, failed
+
+
+async def _evidence_to_database() -> int:
+    from sqlalchemy import select
+
+    from bandit.incidents.infrastructure.db_evidence import DbEvidenceStore
+    from bandit.incidents.infrastructure.tables import IncidentRow
+    from bandit.shared.config import get_settings
+    from bandit.shared.db import create_engine, create_session_factory
+
+    settings = get_settings()
+    engine = create_engine(settings.database_url)
+    try:
+        sessions = create_session_factory(engine)
+        async with sessions() as session:
+            incidents = set(await session.scalars(select(IncidentRow.id)))
+        copied, failed = await copy_evidence(
+            DbEvidenceStore(sessions), Path(settings.media_root), incidents
+        )
+    finally:
+        await engine.dispose()
+    print(f"evidence → base de datos: {copied} copiados, {failed} con error")
+    return 1 if failed else 0
+
+
 async def _to_database() -> int:
     from bandit.directory.infrastructure.db_media import DbMediaStore
     from bandit.shared.config import get_settings
@@ -93,6 +151,8 @@ async def _to_database() -> int:
 async def _main() -> int:
     from bandit.shared.config import get_settings
 
+    if "--evidence-db" in sys.argv[1:]:
+        return await _evidence_to_database()
     if "--db" in sys.argv[1:]:
         return await _to_database()
     settings = get_settings()
