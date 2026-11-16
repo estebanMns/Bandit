@@ -1,6 +1,5 @@
 """Puertos del módulo de incidentes."""
 
-from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
@@ -21,5 +20,3 @@ class EvidenceStore(Protocol):
     async def save(self, incident_id: UUID, jpeg: bytes) -> None: ...
 
     async def load(self, incident_id: UUID) -> bytes | None: ...
-
-    async def purge_older_than(self, cutoff: datetime) -> int: ...
