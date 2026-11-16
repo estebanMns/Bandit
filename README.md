@@ -91,7 +91,6 @@ dirección** (Render la publica sola en `RENDER_EXTERNAL_URL`). No hace falta co
 | `WS_ALLOWED_ORIGINS` | Opcional. Con el ticket no hace falta: solo el propio frontend puede obtenerlo. Sirve para conexiones con cookie desde otro dominio; acepta un comodín para las vistas previas (`https://*-<tu-equipo>.vercel.app`). |
 | `CAMERA_ENCRYPTION_KEY` | La misma con la que se guardaron las cámaras. |
 | `IMOU_APP_ID`, `IMOU_APP_SECRET`, `IMOU_API_URL` | Video de las cámaras Imou por su nube (ver abajo). |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET` | Evidencia de los eventos en Supabase Storage. Sin esto se guarda en el disco de Render, que se borra en cada despliegue, y las imágenes salen en negro. Crea antes un bucket **privado** (`bandit`). Las fotos del directorio no lo necesitan: viven en la base de datos. |
 | `GEMINI_FALLBACK_MODELS` | Respaldos si un modelo de Gemini se queda sin cuota. |
 
 **Cámaras en una red privada.** Un backend en internet no alcanza una cámara con IP privada
@@ -105,29 +104,26 @@ probar), ponle `CAMERA_CAPTURE_ENABLED=false`, o mejor usa otra base para las pr
 dos capturan y analizan a la vez, las alertas salen duplicadas y la cuota de Gemini se gasta el
 doble.
 
-**Imágenes que quedaron en un PC.** La evidencia y las fotos del directorio que se guardaron en
-el disco de otro equipo no existen en Render. Con las variables de Supabase en ese equipo, súbelas
-una vez (no borra nada del disco):
+**Imágenes en la base de datos.** La evidencia de cada evento (tabla `incident_evidence`) y las
+fotos y volantes del directorio (tabla `directory_files`) se guardan en la base de Supabase. Así
+las ve cualquier backend, el PC o Render, y sobreviven a los despliegues. La evidencia vive
+mientras exista el evento: no se borra por antigüedad.
+
+Las imágenes que quedaron en el disco de un PC, de versiones anteriores, se copian una vez a la
+base. No borra nada del disco:
 
 ```bash
-docker compose exec backend python -m bandit.tools.upload_media
-```
-
-Las fotos y volantes del directorio se guardan en la base de datos (tabla `directory_files`). Las
-que quedaron en el disco de un PC se copian una vez a la base con:
-
-```bash
+docker compose exec backend python -m bandit.tools.upload_media --evidence-db
 docker compose exec backend python -m bandit.tools.upload_media --db
 ```
 
-Si no, se vuelven a descargar en la siguiente extracción. Mientras falte una foto, se muestran las
-iniciales.
+Las fotos del directorio que falten se vuelven a descargar en la siguiente extracción; mientras
+tanto se muestran las iniciales.
 
-**Plan gratuito de Render.** Tiene muy poca CPU y se duerme tras unos minutos sin visitas: la
-primera visita después tarda unos 50 segundos y la captura de cámaras se detiene mientras duerme.
-Para vigilancia continua usa un plan pagado. Para gastar menos CPU baja `VIDEO_FPS` (por ejemplo a
-2) y, si solo quieres que no se duerma, un monitor como UptimeRobot puede visitar `/api/health`
-cada 10 minutos.
+**Plan de Render.** Usa **Starter** o superior. El gratuito tiene 0,1 CPU: decodificar el video de
+las cámaras lo satura y cada petición tarda segundos. Además se duerme a los 15 minutos sin visitas
+y entonces deja de capturar y de revisar el boletín. Con Starter pon `VIDEO_FPS=2` en sus
+variables: el análisis no necesita más y queda CPU libre para responder rápido.
 
 ### Correr sin Docker en Windows (para depurar)
 
@@ -147,8 +143,7 @@ está el `.env`) y con el entorno de Python activado:
    abrirlo desde otro equipo de la red, pon su IP en `frontend/.env.local`
    (`ALLOWED_DEV_ORIGINS=192.168.1.50`) y reinicia `npm run dev`.
 
-En este modo las evidencias y fotos del directorio guardadas por Docker no existen (viven en su
-volumen), así que esas imágenes muestran "no disponible". `next dev` también es más lento que la
+Las evidencias y fotos del directorio salen de la base de datos, igual que en Docker. `next dev` también es más lento que la
 versión de Docker: compila cada página la primera vez y no reenvía los eventos en vivo.
 
 ### Cuentas y roles
