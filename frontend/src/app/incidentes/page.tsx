@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
-import type { Establishment } from "@/features/establishments/api";
 import { formatDateTime, situationLabel, statusLabel } from "@/features/incidents/labels";
 import type { Incident } from "@/features/incidents/types";
 import { serverApi } from "@/lib/server-api";
@@ -16,11 +15,12 @@ export default async function IncidentsPage({
   searchParams: Promise<{ local?: string }>;
 }) {
   const { local } = await searchParams;
-  const establishments = await serverApi<Establishment[]>("/api/establishments");
-  const current = establishments.find((item) => item.id === local) ?? establishments[0];
-  const incidents = current
-    ? await serverApi<Incident[]>(`/api/establishments/${current.id}/incidents`)
-    : [];
+  // Una sola llamada: el local (el pedido o el primero) y sus eventos.
+  const query = local ? `?local=${encodeURIComponent(local)}` : "";
+  const { establishment: current, incidents } = await serverApi<{
+    establishment: { id: string; name: string } | null;
+    incidents: Incident[];
+  }>(`/api/incidents${query}`);
 
   return (
     <AppShell>
