@@ -14,6 +14,11 @@ class AuditResponse(BaseModel):
     actor: str
 
 
+class LocalSummary(BaseModel):
+    id: UUID
+    name: str
+
+
 class IncidentResponse(BaseModel):
     id: UUID
     establishment_id: UUID
@@ -45,3 +50,10 @@ class IncidentResponse(BaseModel):
                 for entry in incident.audit
             ],
         )
+
+
+class IncidentsPageResponse(BaseModel):
+    """Todo lo que necesita la página de eventos, en un solo viaje."""
+
+    establishment: LocalSummary | None
+    incidents: list[IncidentResponse]

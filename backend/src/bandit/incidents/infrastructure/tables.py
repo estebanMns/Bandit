@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Float, ForeignKey, String
+from sqlalchemy import Float, ForeignKey, LargeBinary, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from bandit.shared.db import Base, UtcDateTime
@@ -39,3 +39,15 @@ class AuditRow(Base):
     status: Mapped[str] = mapped_column(String(30))
     at: Mapped[datetime] = mapped_column(UtcDateTime)
     actor: Mapped[str] = mapped_column(String(320))
+
+
+class EvidenceRow(Base):
+    """Fotograma del evento. Vive en la base mientras exista el evento."""
+
+    __tablename__ = "incident_evidence"
+
+    incident_id: Mapped[UUID] = mapped_column(
+        ForeignKey("incidents.id", ondelete="CASCADE"), primary_key=True
+    )
+    jpeg: Mapped[bytes] = mapped_column(LargeBinary)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime)

@@ -1,5 +1,4 @@
 import asyncio
-from datetime import timedelta
 from uuid import uuid4
 
 import pytest
@@ -12,7 +11,7 @@ from bandit.incidents.domain.models import (
     IncidentConfirmed,
     IncidentStatus,
 )
-from bandit.incidents.infrastructure.file_evidence import FileEvidenceStore
+from bandit.incidents.infrastructure.db_evidence import DbEvidenceStore
 from bandit.incidents.infrastructure.repositories import SqlIncidentRepository
 from bandit.incidents.module import IncidentsModule
 from bandit.shared.errors import ConflictError
@@ -43,14 +42,14 @@ def establishments(sessions):
 
 
 @pytest.fixture
-def module(sessions, establishments, bus, clock, tmp_path) -> IncidentsModule:
+def module(sessions, establishments, bus, clock) -> IncidentsModule:
     return IncidentsModule(
         sessions,
-        FileEvidenceStore(str(tmp_path)),
+        DbEvidenceStore(sessions),
         establishments.get,
         bus,
         clock,
-        timedelta(days=7),
+        establishments.list_all,
     )
 
 
@@ -193,3 +192,12 @@ async def test_recent_incidents_are_listed_newest_first(module, local, clock):
     listed = await module.list_recent.execute(local.id)
 
     assert [incident.id for incident in listed] == [second.id, first.id]
+
+
+async def test_evidence_lives_in_the_database_until_the_event_is_gone(module, local, clock):
+    incident = await module.record_situation.execute(situation(local.id, clock))
+
+    await module.evidence.save(incident.id, b"otra")
+
+    assert await module.evidence.load(incident.id) == b"otra"
+    assert await module.evidence.load(uuid4()) is None

@@ -28,7 +28,6 @@ CAMERA_SYNC_SECONDS = 60
 
 def _build_scheduler(application: Application, settings: Settings) -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler(timezone="UTC")
-    scheduler.add_job(application.incidents.purge_evidence.execute, "interval", hours=6)
     # La base la comparten varios equipos: cada minuto se arrancan o detienen las cámaras que
     # otro equipo agregó, desactivó o borró.
     scheduler.add_job(
