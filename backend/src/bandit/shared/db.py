@@ -33,11 +33,20 @@ class UtcDateTime(TypeDecorator[datetime]):
 
 # Supabase cierra conexiones inactivas: se renuevan antes de que eso pase.
 _POOL_RECYCLE_SECONDS = 240
+# Supabase (modo session) permite 15 conexiones por proyecto y las comparte entre procesos.
+# Con el pool por defecto (5 + 10) un solo backend las agota y los jobs fallan con EMAXCONNSESSION.
+_POOL_SIZE = 3
+_MAX_OVERFLOW = 2
 
 
 def create_engine(url: str) -> AsyncEngine:
     # Sin pre_ping: con la base lejos, cada ping cuesta un viaje completo por consulta.
-    return create_async_engine(url, pool_recycle=_POOL_RECYCLE_SECONDS)
+    return create_async_engine(
+        url,
+        pool_recycle=_POOL_RECYCLE_SECONDS,
+        pool_size=_POOL_SIZE,
+        max_overflow=_MAX_OVERFLOW,
+    )
 
 
 class SessionFactory:
