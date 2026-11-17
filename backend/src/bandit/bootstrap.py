@@ -1,5 +1,6 @@
 """Raíz de composición: el único lugar que conoce las implementaciones concretas."""
 
+import logging
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -45,7 +46,8 @@ from bandit.establishments.infrastructure import tables as establishment_tables 
 from bandit.establishments.infrastructure.nominatim import NominatimGeocoder
 from bandit.establishments.module import EstablishmentsModule
 from bandit.faces.application.watcher import FacePolicy
-from bandit.faces.domain.models import FaceCheckDone
+from bandit.faces.domain.models import FaceCheckDone, WatchedPerson
+from bandit.faces.infrastructure.bulletin_watch_list import BulletinWatchList
 from bandit.faces.infrastructure.gemini_comparer import GeminiFaceComparer
 from bandit.faces.infrastructure.reference_folder import ReferenceFolderWatchList
 from bandit.faces.module import FacesModule
@@ -73,6 +75,8 @@ from bandit.shared.config import Settings
 from bandit.shared.db import create_engine, create_session_factory
 from bandit.shared.events import EventBus, InMemoryEventBus
 from bandit.shared.gemini import model_list
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -148,7 +152,27 @@ def _faces_module(
         records = await directory.list_active.execute()
         return [(record.name, record.slug) for record in records if record.local_test]
 
+    async def bulletin_people() -> list[WatchedPerson]:
+        # Fotos publicadas en el boletín: una por registro activo que tenga foto.
+        people: list[WatchedPerson] = []
+        for record in await directory.list_active.execute():
+            if not record.photo_file:
+                continue
+            photo = await directory.media.load(record.photo_file)
+            if photo is not None:
+                people.append(WatchedPerson(record.name, (photo,)))
+        cap = settings.face_watch_max_candidates
+        if len(people) > cap:
+            logger.warning("Boletín con %d fotos; se comparan las primeras %d", len(people), cap)
+        return people[:cap]
+
     enabled = settings.face_watch_enabled and bool(settings.gemini_api_key)
+    bulletin = settings.face_watch_source == "boletin"
+    watch_list = (
+        BulletinWatchList(bulletin_people)
+        if bulletin
+        else ReferenceFolderWatchList(str(Path(settings.media_root) / "faces"), consented_people)
+    )
     return FacesModule(
         cameras.frames,
         cameras.get,
@@ -158,11 +182,12 @@ def _faces_module(
         )
         if enabled
         else None,
-        ReferenceFolderWatchList(str(Path(settings.media_root) / "faces"), consented_people),
+        watch_list,
         PillowMotionDetector(),
         FacePolicy(
             min_interval_seconds=settings.face_watch_interval_seconds,
             motion_threshold=settings.analysis_motion_threshold,
+            batched=bulletin,
             match_threshold=settings.face_watch_match_threshold,
             confirmation_frames=settings.face_watch_confirmation_frames,
         ),
@@ -170,6 +195,7 @@ def _faces_module(
         settings.face_watch_daily_limit,
         bus,
         clock,
+        source=settings.face_watch_source,
     )
 
 
@@ -203,15 +229,20 @@ def _wire_events(bus: EventBus, app: Application) -> None:
         check = event.check
         if not check.alerted or check.person is None:
             return
+        bulletin = app.faces.source == "boletin"
         incident = Incident(
             id=uuid4(),
             establishment_id=check.establishment_id,
             camera_id=check.camera_id,
             camera_name=check.camera_name,
-            type=WANTED_MATCH,
+            type=BOLETIN_MATCH if bulletin else WANTED_MATCH,
             severity="high",
             confidence=check.confidence,
-            description=describe_face_match(check.person, check.confidence, check.explanation),
+            description=(
+                describe_boletin_match(check.person, check.confidence, check.explanation)
+                if bulletin
+                else describe_face_match(check.person, check.confidence, check.explanation)
+            ),
             detected_at=check.at,
         )
         await app.incidents.record_situation.record(incident, event.jpeg)
@@ -223,6 +254,16 @@ def _wire_events(bus: EventBus, app: Application) -> None:
 
 
 WANTED_MATCH = "wanted_match"
+BOLETIN_MATCH = "boletin_match"
+
+
+def describe_boletin_match(person: str, confidence: float, explanation: str) -> str:
+    # Nunca afirma identidad: la confirma un operador antes de cualquier aviso.
+    text = (
+        f"Posible coincidencia con {person}, publicado en el boletín, {confidence:.0%}. "
+        f"Verificar con revisión humana antes de actuar. {explanation}"
+    )
+    return text[:300]
 
 
 def describe_face_match(person: str, confidence: float, explanation: str) -> str:

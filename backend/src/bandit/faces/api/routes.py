@@ -33,6 +33,7 @@ async def get_face_checks(
     return FaceWatchResponse(
         enabled=module.enabled,
         model=module.model,
+        source=module.source,
         people=[person.name for person in people],
         used=module.limit.used,
         limit=module.limit.limit,

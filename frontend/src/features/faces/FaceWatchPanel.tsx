@@ -23,8 +23,9 @@ export function FaceWatchPanel({ establishmentId }: { establishmentId: string | 
         <div>
           <h2 id="titulo-rostros">Prueba de rostros</h2>
           <p className={styles.detalle}>
-            Cuando alguien aparece en cámara, la IA lo compara solo con las personas de prueba que
-            dieron su consentimiento. Sirve para medir si confunde a alguien que no está en la lista.
+            {watch.source === "boletin"
+              ? "Cuando alguien aparece en cámara, la IA lo compara con las fotos publicadas en el boletín. Una coincidencia abre una alerta para revisión humana: nada se confirma sin un operador."
+              : "Cuando alguien aparece en cámara, la IA lo compara solo con las personas de prueba que dieron su consentimiento. Sirve para medir si confunde a alguien que no está en la lista."}
           </p>
         </div>
         {watch.enabled && (
@@ -68,7 +69,8 @@ export function FaceWatchPanel({ establishmentId }: { establishmentId: string | 
       ) : (
         <>
           <p className={styles.detalle}>
-            Lista de prueba: <strong>{watch.people.join(", ")}</strong>
+            {watch.source === "boletin" ? "Candidatos del boletín: " : "Lista de prueba: "}
+            <strong>{watch.people.join(", ")}</strong>
             {watch.model && <> · modelo {watch.model}</>}
           </p>
           {watch.recent.length === 0 ? (
