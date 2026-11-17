@@ -163,6 +163,8 @@ def _faces_module(
         FacePolicy(
             min_interval_seconds=settings.face_watch_interval_seconds,
             motion_threshold=settings.analysis_motion_threshold,
+            match_threshold=settings.face_watch_match_threshold,
+            confirmation_frames=settings.face_watch_confirmation_frames,
         ),
         settings.face_watch_cooldown_seconds,
         settings.face_watch_daily_limit,

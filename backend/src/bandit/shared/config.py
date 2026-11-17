@@ -48,6 +48,8 @@ class Settings(BaseSettings):
     face_watch_interval_seconds: float = Field(default=5, gt=0)
     face_watch_daily_limit: int = Field(default=300, ge=0)
     face_watch_cooldown_seconds: float = Field(default=600, ge=0)
+    face_watch_match_threshold: float = Field(default=0.8, ge=0, le=1)
+    face_watch_confirmation_frames: int = Field(default=2, ge=1)
 
     whatsapp_access_token: str = ""
     whatsapp_phone_number_id: str = ""

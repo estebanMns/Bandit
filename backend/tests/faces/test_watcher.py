@@ -57,7 +57,17 @@ class Motion:
         return self.value
 
 
-def build(comparer, people=None, motion=None, limit=100, cooldown=600, gate=None, place=None):
+def build(
+    comparer,
+    people=None,
+    motion=None,
+    limit=100,
+    cooldown=600,
+    gate=None,
+    place=None,
+    confirmation=1,
+    threshold=0.8,
+):
     bus = InMemoryEventBus()
     events = []
 
@@ -72,7 +82,12 @@ def build(comparer, people=None, motion=None, limit=100, cooldown=600, gate=None
         motion or Motion(),
         DailyLimit(limit, Clock()),
         bus,
-        FacePolicy(min_interval_seconds=5, motion_threshold=0.02),
+        FacePolicy(
+            min_interval_seconds=5,
+            motion_threshold=0.02,
+            match_threshold=threshold,
+            confirmation_frames=confirmation,
+        ),
         gate or AlertGate(cooldown),
     )
     return watch, events
@@ -98,6 +113,46 @@ async def test_each_outcome_is_reported_and_only_a_confident_match_alerts():
     assert [c.alerted for c in checks] == [False, False, False, True]
     assert checks[3].person == "Persona Prueba"
     assert checks[0].person is None
+
+
+async def test_a_single_match_does_not_alert_until_it_is_confirmed():
+    watch, events = build(Comparer(MATCH, MATCH), confirmation=2)
+
+    await watch.on_frame(b"x", at(0))
+    await watch.on_frame(b"x", at(2))
+
+    assert [event.check.outcome for event in events] == [FaceOutcome.MATCH] * 2
+    assert [event.check.alerted for event in events] == [False, True]
+
+
+async def test_anything_but_another_match_restarts_the_confirmation():
+    watch, events = build(Comparer(MATCH, OTHER, MATCH, EMPTY, MATCH), confirmation=2)
+
+    for second in (0, 2, 7, 9, 14):
+        await watch.on_frame(b"x", at(second))
+
+    assert not any(event.check.alerted for event in events)
+
+
+async def test_while_confirming_it_checks_sooner_and_without_needing_motion():
+    comparer = Comparer(MATCH, MATCH)
+    watch, events = build(comparer, motion=Motion(0.0), confirmation=2)
+
+    await watch.on_frame(b"a", at(0))
+    await watch.on_frame(b"b", at(1))
+    await watch.on_frame(b"c", at(2))
+
+    assert comparer.calls == 2
+    assert events[-1].check.alerted is True
+
+
+async def test_the_threshold_comes_from_the_policy():
+    watch, events = build(Comparer(MATCH), threshold=0.97)
+
+    await watch.on_frame(b"x", at(0))
+
+    assert events[0].check.outcome is FaceOutcome.NO_MATCH
+    assert events[0].check.alerted is False
 
 
 async def test_the_same_person_alerts_again_only_after_the_cooldown():

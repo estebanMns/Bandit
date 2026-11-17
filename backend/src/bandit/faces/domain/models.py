@@ -33,9 +33,8 @@ class FaceVerdict:
     confidence: float
     explanation: str
 
-    @property
-    def confident_match(self) -> bool:
-        return self.face_visible and self.same_person and self.confidence >= MATCH_THRESHOLD
+    def matches(self, threshold: float = MATCH_THRESHOLD) -> bool:
+        return self.face_visible and self.same_person and self.confidence >= threshold
 
 
 @dataclass(frozen=True, slots=True)
