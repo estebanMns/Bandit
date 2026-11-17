@@ -5,6 +5,7 @@ import type { FaceCheck, FaceWatch } from "./types";
 const watch: FaceWatch = {
   enabled: true,
   model: "modelo",
+  source: "pruebas",
   people: ["Persona Prueba"],
   used: 1,
   limit: 300,

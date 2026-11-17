@@ -1,6 +1,7 @@
 """Configuración tipada, cargada desde el entorno."""
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -37,6 +38,9 @@ class Settings(BaseSettings):
     # Prueba de rostros: compara a quien aparece en cámara solo con los registros de prueba
     # locales que dieron su consentimiento. Apagada por defecto.
     face_watch_enabled: bool = False
+    # pruebas: solo personas de prueba con consentimiento. boletin: las fotos publicadas.
+    face_watch_source: Literal["pruebas", "boletin"] = "pruebas"
+    face_watch_max_candidates: int = Field(default=40, ge=1, le=100)
     face_watch_model: str = "gemini-3.1-flash-lite"
     face_watch_interval_seconds: float = Field(default=5, gt=0)
     face_watch_daily_limit: int = Field(default=300, ge=0)

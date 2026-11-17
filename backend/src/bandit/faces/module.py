@@ -22,8 +22,10 @@ class FacesModule:
         daily_limit: int,
         bus: EventBus,
         clock: Clock,
+        source: str = "pruebas",
     ) -> None:
         self.enabled = comparer is not None
+        self.source = source
         self.model: str | None = getattr(comparer, "model", None)
         self.watch_list = watch_list
         self.limit = DailyLimit(daily_limit, clock)

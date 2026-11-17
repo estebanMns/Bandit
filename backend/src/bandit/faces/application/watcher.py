@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 class FacePolicy:
     min_interval_seconds: float
     motion_threshold: float
+    # Boletín: una sola consulta por imagen contra todos los candidatos.
+    batched: bool = False
 
 
 class AlertGate:
@@ -105,6 +107,8 @@ class CameraFaceWatch:
     async def _compare(
         self, people: list[WatchedPerson], jpeg: bytes
     ) -> tuple[FaceOutcome, str | None, FaceVerdict]:
+        if self._policy.batched:
+            return await self._identify(people, jpeg)
         # Si nadie coincide se muestra la respuesta sobre la primera persona de la lista.
         first: FaceVerdict | None = None
         for watched in people:
@@ -120,6 +124,20 @@ class CameraFaceWatch:
             first = first or verdict
         assert first is not None
         return FaceOutcome.NO_MATCH, None, first
+
+    async def _identify(
+        self, people: list[WatchedPerson], jpeg: bytes
+    ) -> tuple[FaceOutcome, str | None, FaceVerdict]:
+        try:
+            verdict, index = await self._comparer.identify(people, jpeg)
+        except Exception as error:
+            logger.warning("Falló la identificación de rostros: %s", type(error).__name__)
+            return FaceOutcome.ERROR, None, FaceVerdict(False, False, 0.0, type(error).__name__)
+        if not verdict.face_visible:
+            return FaceOutcome.NO_FACE, None, verdict
+        if index is not None and verdict.confident_match:
+            return FaceOutcome.MATCH, people[index].name, verdict
+        return FaceOutcome.NO_MATCH, None, verdict
 
 
 class FaceSupervisor:

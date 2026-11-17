@@ -17,6 +17,7 @@ export interface FaceCheck {
 export interface FaceWatch {
   enabled: boolean;
   model: string | null;
+  source: "pruebas" | "boletin";
   people: string[];
   used: number;
   limit: number;

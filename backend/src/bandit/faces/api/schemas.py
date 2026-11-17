@@ -35,6 +35,7 @@ class FaceCheckResponse(BaseModel):
 class FaceWatchResponse(BaseModel):
     enabled: bool
     model: str | None
+    source: str
     people: list[str]
     used: int
     limit: int
