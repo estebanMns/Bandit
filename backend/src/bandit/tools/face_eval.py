@@ -3,11 +3,13 @@
 Solo con fotos de personas que dieron su consentimiento, en una carpeta local que nunca se sube:
 
     <carpeta>/personas/<id>/referencia/*.jpg   hasta 3 fotos de referencia de esa persona
-    <carpeta>/personas/<id>/prueba/*.jpg       otras fotos de la MISMA persona
+    <carpeta>/personas/<id>/prueba/*.jpg       otras fotos de la MISMA persona (opcional)
+    <carpeta>/otros/*.jpg                      fotos de gente que no está en personas/
 
 Cada persona se compara con sus propias fotos de prueba (pares genuinos: ¿la reconoce?) y con
-las de todas las demás (pares impostores: ¿alerta por alguien que no es?). Usa el mismo
-comparador e instrucción que la prueba en vivo, con un solo modelo para no mezclar resultados.
+las de todas las demás y las de otros/ (pares impostores: ¿alerta por alguien que no es?).
+Usa el mismo comparador e instrucción que la prueba en vivo, con un solo modelo para no mezclar
+resultados.
 No guarda nada en la base de datos, no crea alertas y no envía nada fuera de Gemini.
 
 Uso, dentro del contenedor del backend:
@@ -29,6 +31,7 @@ from bandit.faces.domain.ports import FaceComparer
 from bandit.tools.face_demo import load_images
 
 THRESHOLDS = (0.5, 0.6, 0.7, 0.8, 0.9, 0.95)
+OTHERS = "otros"
 _MAX_REFERENCES = 3
 _Z95 = 1.96
 
@@ -109,15 +112,18 @@ class Summary:
 
 
 def load_people(root: Path) -> list[Person]:
+    """Personas con referencia y, si hay, `otros/`: fotos de gente que solo sirve de impostora."""
     folder = root / "personas"
-    if not folder.is_dir():
-        return []
     people = []
-    for person in sorted(path for path in folder.iterdir() if path.is_dir()):
-        references = tuple(image for _, image in load_images(person / "referencia"))
-        probes = tuple(load_images(person / "prueba"))
-        if references and probes:
-            people.append(Person(person.name, references[:_MAX_REFERENCES], probes))
+    if folder.is_dir():
+        for person in sorted(path for path in folder.iterdir() if path.is_dir()):
+            references = tuple(image for _, image in load_images(person / "referencia"))
+            if references:
+                probes = tuple(load_images(person / "prueba"))
+                people.append(Person(person.name, references[:_MAX_REFERENCES], probes))
+    others = tuple(load_images(root / OTHERS))
+    if others:
+        people.append(Person(OTHERS, (), others))
     return people
 
 
@@ -125,6 +131,7 @@ def build_pairs(people: Sequence[Person]) -> list[Pair]:
     return [
         Pair(reference.id, probe_owner.id, probe_name)
         for reference in people
+        if reference.references
         for probe_owner in people
         for probe_name, _ in probe_owner.probes
     ]
@@ -275,7 +282,9 @@ def print_summary(summary: Summary) -> None:
     )
 
 
-async def _main(root: Path, repetitions: int, limit: int | None, wait: float, model: str) -> int:
+async def _main(
+    root: Path, repetitions: int, limit: int | None, wait: float, model: str, output: Path | None
+) -> int:
     from bandit.faces.infrastructure.gemini_comparer import GeminiFaceComparer
     from bandit.shared.config import get_settings
 
@@ -284,11 +293,14 @@ async def _main(root: Path, repetitions: int, limit: int | None, wait: float, mo
         print("Falta GEMINI_API_KEY.")
         return 1
     people = load_people(root)
-    if len(people) < 2:
-        print(f"Hacen falta al menos 2 personas con referencia/ y prueba/ en {root / 'personas'}.")
+    pairs = build_pairs(people)
+    if not pairs:
+        print(
+            f"Hace falta una persona con referencia/ en {root / 'personas'} y fotos para "
+            f"comparar (su prueba/, otras personas o {root / OTHERS})."
+        )
         return 1
     model = model or settings.face_watch_model
-    pairs = build_pairs(people)
     genuine = sum(pair.genuine for pair in pairs)
     calls = len(pairs) * repetitions if limit is None else min(limit, len(pairs) * repetitions)
     print(
@@ -302,9 +314,14 @@ async def _main(root: Path, repetitions: int, limit: int | None, wait: float, mo
     trials = await evaluate(
         people, GeminiFaceComparer(settings.gemini_api_key, [model]), repetitions, limit, pause
     )
-    output = root / "resultados.csv"
-    write_csv(output, trials)
+    # Primero el resumen: si no se puede guardar el detalle, las llamadas no se pierden.
     print_summary(summarize(trials))
+    output = output or root / "resultados.csv"
+    try:
+        write_csv(output, trials)
+    except OSError as error:
+        print(f"\nNo se pudo guardar el detalle en {output}: {error}")
+        return 1
     print(f"\nDetalle por comparación en {output}")
     return 0
 
@@ -316,8 +333,13 @@ def main() -> None:
     parser.add_argument("--limite", type=int, help="Máximo de llamadas a Gemini")
     parser.add_argument("--pausa", type=float, default=1.0, help="Segundos entre llamadas")
     parser.add_argument("--modelo", default="", help="Por defecto FACE_WATCH_MODEL")
+    parser.add_argument("--salida", type=Path, help="CSV de detalle (por defecto en la carpeta)")
     args = parser.parse_args()
-    sys.exit(asyncio.run(_main(args.root, args.repeticiones, args.limite, args.pausa, args.modelo)))
+    sys.exit(
+        asyncio.run(
+            _main(args.root, args.repeticiones, args.limite, args.pausa, args.modelo, args.salida)
+        )
+    )
 
 
 if __name__ == "__main__":

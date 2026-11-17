@@ -127,6 +127,17 @@ async def test_repetitions_reveal_unstable_answers_and_the_limit_caps_calls():
     assert (summary.unstable.errors, summary.unstable.total) == (1, 2)
 
 
+def test_others_without_references_only_serve_as_impostors():
+    others = Person("otros", (), (("x.jpg", b"foto-x"),))
+
+    pairs = build_pairs([ANA, others])
+
+    assert [(p.reference, p.probe_person, p.genuine) for p in pairs] == [
+        ("ana", "ana", True),
+        ("ana", "otros", False),
+    ]
+
+
 def test_worst_case_with_no_errors_follows_the_rule_of_three():
     assert 0.009 < Rate(0, 300).upper95 < 0.013
     assert Rate(0, 0).upper95 == 1.0
@@ -138,10 +149,14 @@ def test_loads_only_complete_people_and_writes_one_row_per_comparison(tmp_path):
         (tmp_path / "personas" / name / "referencia" / "r.jpg").write_bytes(b"r")
         (tmp_path / "personas" / name / "prueba").mkdir()
         (tmp_path / "personas" / name / "prueba" / "p.jpg").write_bytes(b"p")
-    (tmp_path / "personas" / "sin-pruebas" / "referencia").mkdir(parents=True)
+    (tmp_path / "personas" / "sin-referencia" / "prueba").mkdir(parents=True)
+    (tmp_path / "personas" / "sin-referencia" / "prueba" / "p.jpg").write_bytes(b"p")
+    (tmp_path / "otros").mkdir()
+    (tmp_path / "otros" / "x.jpg").write_bytes(b"x")
 
     people = load_people(tmp_path)
-    assert [person.id for person in people] == ["ana", "luis"]
+    assert [person.id for person in people] == ["ana", "luis", "otros"]
+    assert people[-1].references == ()
 
     trials = [Trial(Pair("ana", "luis", "p.jpg"), 1, True, True, 0.91, "Se parecen")]
     write_csv(tmp_path / "resultados.csv", trials)

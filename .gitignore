@@ -25,6 +25,8 @@ test-results/
 
 # Datos de ejecución: nunca se versionan
 backend/var/
+# Fotos de rostros de prueba: datos personales, nunca se suben
+backend/evaluation/rostros/
 data/
 *.mp4
 *.mkv
