@@ -38,6 +38,8 @@ class GeminiFaceComparer:
             system_instruction=INSTRUCTION,
             response_mime_type="application/json",
             response_schema=_Verdict,
+            # La misma imagen debe dar la misma respuesta.
+            temperature=0.0,
         )
 
     @property

@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 
 from bandit.cameras.public import Camera, CameraStatus, CameraStatusChanged, FrameHub, GetCamera
 from bandit.faces.domain.models import (
+    MATCH_THRESHOLD,
     DailyLimit,
     FaceCheck,
     FaceCheckDone,
@@ -21,10 +22,16 @@ from bandit.shared.events import EventBus
 logger = logging.getLogger(__name__)
 
 
+_CONFIRMING_INTERVAL_SECONDS = 2.0
+
+
 @dataclass(frozen=True, slots=True)
 class FacePolicy:
     min_interval_seconds: float
     motion_threshold: float
+    match_threshold: float = MATCH_THRESHOLD
+    # Coincidencias seguidas con la misma persona antes de alertar: una sola puede ser un error.
+    confirmation_frames: int = 1
 
 
 class AlertGate:
@@ -67,15 +74,20 @@ class CameraFaceWatch:
         self._alerts = alerts
         self._previous: bytes | None = None
         self._last_check: datetime | None = None
+        self._streak_person: str | None = None
+        self._streak = 0
 
     async def on_frame(self, jpeg: bytes, at: datetime) -> None:
-        if self._last_check and at - self._last_check < timedelta(
-            seconds=self._policy.min_interval_seconds
-        ):
+        confirming = self._streak > 0
+        interval = _CONFIRMING_INTERVAL_SECONDS if confirming else self._policy.min_interval_seconds
+        if self._last_check and at - self._last_check < timedelta(seconds=interval):
             return
         previous, self._previous = self._previous, jpeg
-        if previous is not None and self._motion.score(previous, jpeg) < (
-            self._policy.motion_threshold
+        # Mientras se confirma no se exige movimiento: la persona puede estar quieta.
+        if (
+            not confirming
+            and previous is not None
+            and self._motion.score(previous, jpeg) < self._policy.motion_threshold
         ):
             return
         people = await self._watch_list.people()
@@ -84,7 +96,7 @@ class CameraFaceWatch:
         self._last_check = at
         outcome, person, verdict = await self._compare(people, jpeg)
         alerted = (
-            outcome is FaceOutcome.MATCH
+            self._confirmed(outcome, person)
             and person is not None
             and self._alerts.allow(self._camera.establishment_id, person, at)
         )
@@ -102,6 +114,20 @@ class CameraFaceWatch:
         )
         await self._bus.publish(FaceCheckDone(check=check, jpeg=jpeg))
 
+    def _confirmed(self, outcome: FaceOutcome, person: str | None) -> bool:
+        """Cuenta coincidencias seguidas con la misma persona; cualquier otra cosa reinicia."""
+        if outcome is not FaceOutcome.MATCH or person is None:
+            self._streak_person, self._streak = None, 0
+            return False
+        if person == self._streak_person:
+            self._streak += 1
+        else:
+            self._streak_person, self._streak = person, 1
+        if self._streak < self._policy.confirmation_frames:
+            return False
+        self._streak_person, self._streak = None, 0
+        return True
+
     async def _compare(
         self, people: list[WatchedPerson], jpeg: bytes
     ) -> tuple[FaceOutcome, str | None, FaceVerdict]:
@@ -115,7 +141,7 @@ class CameraFaceWatch:
                 return FaceOutcome.ERROR, None, FaceVerdict(False, False, 0.0, type(error).__name__)
             if not verdict.face_visible:
                 return FaceOutcome.NO_FACE, None, verdict
-            if verdict.confident_match:
+            if verdict.matches(self._policy.match_threshold):
                 return FaceOutcome.MATCH, watched.name, verdict
             first = first or verdict
         assert first is not None
